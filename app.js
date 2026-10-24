@@ -292,13 +292,17 @@
   const DN_EXTENT = '107.1,14.8,109.2,16.6';
   const withTimeout = (ms) => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; };
   async function getJSON(url) { const r = await fetch(url, { signal: withTimeout(9000) }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
-  const cleanEsri = (t) => String(t || '').replace(/,?\s*(Việt Nam|Vietnam|VNM)$/i, '').trim();
+  // bỏ quốc gia và mã bưu chính (5–6 chữ số) khỏi nhãn địa chỉ
+  const cleanEsri = (t) => String(t || '').replace(/,?\s*(Việt Nam|Vietnam|VNM)\s*$/i, '').replace(/,\s*\d{5,6}(?=\s*(,|$))/g, '').replace(/^\s*,\s*|\s*,\s*$/g, '').trim();
+  const joinAddr = (...xs) => xs.map((x) => String(x || '').trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+  const ADDR_RANK = { PointAddress: 0, Subaddress: 0, StreetAddress: 1, StreetInt: 2, StreetName: 2, Locality: 3, POI: 4 };
 
   async function reverse(lat, lng) {
     try {
-      const j = await getJSON(`${ESRI_GC}/reverseGeocode?location=${lng},${lat}&langCode=VI&f=json`);
+      // chỉ lấy địa chỉ / tên đường, không lấy tên cửa hàng gần đó
+      const j = await getJSON(`${ESRI_GC}/reverseGeocode?location=${lng},${lat}&langCode=VI&featureTypes=PointAddress,StreetAddress,StreetName&f=json`);
       const a = j.address || {};
-      const t = cleanEsri(a.LongLabel || a.Match_addr || [a.Address, a.Neighborhood, a.District, a.City].filter(Boolean).join(', '));
+      const t = cleanEsri(joinAddr(a.Address, a.Neighborhood, a.District, a.City)) || cleanEsri(a.Match_addr);
       if (t) return t;
     } catch (_) {}
     try {
@@ -309,13 +313,21 @@
 
   const inArea = (x) => x.lat > 14.8 && x.lat < 16.6 && x.lng > 107.1 && x.lng < 109.2;
   async function geoEsri(q) {
-    const u = `${ESRI_GC}/findAddressCandidates?SingleLine=${encodeURIComponent(q)}&countryCode=VNM&searchExtent=${DN_EXTENT}&location=108.2,16.05&maxLocations=8&langCode=VI&outFields=PlaceName,Addr_type,Score&f=json`;
+    const u = `${ESRI_GC}/findAddressCandidates?SingleLine=${encodeURIComponent(q)}&countryCode=VNM&searchExtent=${DN_EXTENT}&location=108.2,16.05&maxLocations=10&langCode=VI&outFields=PlaceName,Addr_type,StAddr,Nbrhd,District,City,Score&f=json`;
     const j = await getJSON(u);
+    const wantsNumber = /^\s*\d/.test(q); // gõ số nhà thì ưu tiên kết quả là địa chỉ, đẩy cửa hàng xuống
     return (j.candidates || []).filter((c) => c.score >= 60).map((c) => {
-      const addr = cleanEsri(c.address);
-      const name = (c.attributes && c.attributes.PlaceName) || addr.split(',')[0];
-      return { lat: c.location.y, lng: c.location.x, title: name, sub: addr };
-    });
+      const at = c.attributes || {}, type = at.Addr_type || '';
+      const area = joinAddr(at.Nbrhd, at.District, at.City);
+      const isPoi = type === 'POI';
+      const street = cleanEsri(at.StAddr);
+      // địa chỉ dùng làm tiêu đề vị trí: không bao giờ là tên cửa hàng
+      const addr = isPoi ? (street ? joinAddr(street, area) : `Gần ${at.PlaceName || 'địa điểm'}, ${area}`) : cleanEsri(c.address);
+      const title = isPoi ? (at.PlaceName || street || addr.split(',')[0]) : (street || addr.split(',')[0]);
+      const sub = isPoi ? `Địa điểm · ${street ? joinAddr(street, area) : area}` : cleanEsri(addr);
+      const rank = (ADDR_RANK[type] != null ? ADDR_RANK[type] : 3) + (isPoi && wantsNumber ? 2 : 0);
+      return { lat: c.location.y, lng: c.location.x, title, sub, addr: cleanEsri(addr), rank, score: c.score };
+    }).sort((a, b) => a.rank - b.rank || b.score - a.score);
   }
   async function geoNominatim(qq) {
     const j = await getJSON(`${NOMI}/search?format=jsonv2&q=${encodeURIComponent(qq)}&countrycodes=vn&viewbox=107.1,16.6,109.2,14.8&bounded=1&limit=6&addressdetails=1&accept-language=vi`);
@@ -558,7 +570,7 @@
     const { results, reached } = await geocode(r.q);
     if (!reached) return suggestMsg('Không kết nối được dịch vụ tìm địa chỉ. Kiểm tra mạng, hoặc dán toạ độ / chạm vào bản đồ.');
     if (!results.length) return suggestMsg('Không tìm thấy địa chỉ này. Số nhà trong kiệt thường chưa có trên bản đồ: thử tên đường kèm phường (ví dụ: Mân Quang 7, Sơn Trà), rồi chạm đúng vị trí trên bản đồ.');
-    suggestList(results, (it) => { q.blur(); lookup(it.lat, it.lng, { addr: it.sub || it.title, zoom: 18 }); }, 'Vị trí tìm theo địa chỉ là gần đúng, kiểm tra lại trên bản đồ:');
+    suggestList(results, (it) => { q.blur(); lookup(it.lat, it.lng, { addr: it.addr || it.sub || it.title, zoom: 18 }); }, 'Vị trí tìm theo địa chỉ là gần đúng, kiểm tra lại trên bản đồ:');
   }
   $('#search-form').addEventListener('submit', (e) => { e.preventDefault(); runSearch(q.value); });
   $$('.tip').forEach((t) => t.addEventListener('click', () => { q.value = t.dataset.q; $('#btn-clear').hidden = false; runSearch(t.dataset.q); }));
