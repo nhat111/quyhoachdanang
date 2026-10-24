@@ -4,364 +4,196 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Quy hoạch Đà Nẵng 2050</title>
-<meta name="description" content="Bản đồ trực quan Quy hoạch chung TP Đà Nẵng đến 2050 (QĐ 2016/QĐ-TTg) và các khu vực tiềm năng.">
+<meta name="description" content="Tra vị trí lô đất thuộc vùng quy hoạch nào theo Quy hoạch chung Đà Nẵng 2050, khoảng cách tới hạ tầng, tạo trang gửi khách cho môi giới.">
+<meta property="og:title" content="Quy hoạch Đà Nẵng 2050">
+<meta property="og:description" content="Tra vị trí lô đất theo Quy hoạch chung Đà Nẵng 2050 · công cụ cho môi giới">
+<meta property="og:image" content="/og.png">
+<meta name="theme-color" content="#0d5c63">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230d5c63'/%3E%3Cpath d='M16 6c-4.4 0-8 3.4-8 7.7C8 19.5 16 26 16 26s8-6.5 8-12.3C24 9.4 20.4 6 16 6z' fill='%23fff'/%3E%3Ccircle cx='16' cy='13.5' r='3' fill='%230d5c63'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&family=Roboto+Mono:wght@400;500&display=swap">
-<style>
-:root{
-  --bg:#f4f7f8;--panel:#fff;--fg:#14232b;--muted:#5b6d76;--line:#d7e0e4;--accent:#0f6a8b;
-  --t1:#c0264f;--t2:#d4860b;--t3:#2c8a62;--tc:#7d8a91;--sea:#1f7fb0;
-  --font:"Be Vietnam Pro",system-ui,sans-serif;--mono:"Roboto Mono",ui-monospace,monospace;
-}
-@media (prefers-color-scheme:dark){:root{
-  --bg:#0e171b;--panel:#152228;--fg:#e4edf0;--muted:#93a6ae;--line:#2a3a41;--accent:#5fc3e4;color-scheme:dark}}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font-family:var(--font);background:var(--bg);color:var(--fg);font-size:14.5px;line-height:1.5}
-.app{display:grid;grid-template-columns:380px 1fr;height:100%}
-aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.head{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
-.head h1{margin:0;font-size:1.25rem;font-weight:800;letter-spacing:-.01em;line-height:1.2}
-.head p{margin:.35rem 0 0;color:var(--muted);font-size:13px}
-.src{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px}
-.src a{color:var(--accent)}
-.tabs{display:flex;gap:4px;padding:10px 18px 0;border-bottom:1px solid var(--line)}
-.tab{font:inherit;font-size:13px;font-weight:600;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:8px 10px;cursor:pointer}
-.tab[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
-.pane{overflow:auto;padding:14px 18px 24px;flex:1;min-height:0}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.chip{font:inherit;font-size:12.5px;border:1px solid var(--line);background:none;color:var(--fg);border-radius:999px;padding:5px 10px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
-.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-.item{display:grid;grid-template-columns:24px 1fr;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:6px;padding:9px 8px;cursor:pointer}
-.item:hover{background:color-mix(in srgb,var(--fg) 6%,transparent)}
-.item.sel{border-color:var(--line);background:color-mix(in srgb,var(--accent) 8%,transparent)}
-.n{font-family:var(--mono);font-size:11.5px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff}
-.item b{font-weight:600;display:block;line-height:1.3}
-.item small{color:var(--muted);font-size:12px}
-.detail{display:none;margin:4px 0 8px 34px;font-size:13.5px}
-.item.sel + .detail{display:block}
-.detail ul{margin:0;padding-left:1rem}
-.detail li{margin:.15rem 0}
-.detail .risk{color:var(--muted);margin-top:.4rem}
-.detail .risk b{color:var(--fg)}
-.facts{display:grid;gap:14px}
-.facts h3{margin:0 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-.facts p,.facts ul{margin:0}
-.facts ul{padding-left:1rem}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
-.kv span:nth-child(odd){font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;text-align:right}
-#map{position:absolute;inset:0;background:#e8eef0}
-.leaflet-container{font-family:var(--font)}
-.lbl{background:transparent;border:0;box-shadow:none;font-weight:600;font-size:11px;color:#1b2a31;text-shadow:0 0 3px #fff,0 0 3px #fff}
-.pin{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;border-radius:50%;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 3px #0005}
-.leaflet-popup-content{margin:12px 14px;font-size:13px;line-height:1.45}
-.leaflet-popup-content h4{margin:0 0 4px;font-size:14px}
-.legend{background:var(--panel);color:var(--fg);padding:8px 10px;border-radius:6px;box-shadow:0 1px 4px #0003;font-size:12px;line-height:1.7}
-.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
-.legend .ln{width:16px;height:0;border-top:3px solid;border-radius:0}
-.toggle{display:none}
-@media (max-width:820px){
-  .app{grid-template-columns:1fr;grid-template-rows:1fr auto}
-  aside{order:2;border-right:0;border-top:1px solid var(--line);max-height:46vh;transition:max-height .25s}
-  aside.min{max-height:64px}
-  #map{order:1}
-  .mapwrap{order:1;min-height:0}
-  .toggle{display:block;position:absolute;right:12px;top:14px;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:999px;padding:4px 10px}
-  .head{position:relative;padding-right:90px}
-  .head p,.src{display:none}
-}
-.mapwrap{position:relative;min-height:0;height:100%}
-[hidden]{display:none!important}
-.lbl.off{display:none}
-/* Tra cứu + trang gửi khách */
-.lk-row{display:flex;gap:8px}
-.inp{font:inherit;font-size:14px;width:100%;min-width:0;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--bg);color:var(--fg)}
-textarea.inp{resize:vertical;min-height:60px}
-.btn{font:inherit;font-size:13.5px;font-weight:600;border:0;border-radius:6px;padding:9px 14px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;text-align:center}
-.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
-.hint{color:var(--muted);font-size:12.5px;margin:6px 0 0}
-#lk-msg{color:var(--t1);font-size:13px;margin:6px 0 0;min-height:1em}
-.zonecard{border-left:4px solid var(--line);background:color-mix(in srgb,var(--fg) 4%,transparent);border-radius:6px;padding:10px 12px;margin-top:12px}
-.zonecard .zt{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.zonecard .zn{font-weight:700;font-size:15px;line-height:1.3;margin-top:2px}
-.zonecard .zh{color:var(--muted);font-size:13px}
-.zonecard ul{margin:6px 0 0;padding-left:1rem;font-size:13.5px}
-.zonecard .zr{font-size:13px;color:var(--muted);margin-top:6px}
-.subh{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
-.dist{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13.5px}
-.dist b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums;text-align:right}
-.coord{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:10px;user-select:all}
-.card2{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:16px;display:grid;gap:8px}
-.card2 h3{margin:0;font-size:14px}
-.card2 label{font-size:12.5px;color:var(--muted);display:grid;gap:3px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.lotpin{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e0245e;border:3px solid #fff;box-shadow:0 1px 4px #0006}
-#shareview{padding:16px 18px 24px;overflow:auto;flex:1;min-height:0}
-#shareview h2{margin:0;font-size:1.25rem;line-height:1.25;text-wrap:balance}
-#sv-price{font-size:1.15rem;font-weight:700;color:var(--t1);margin-top:4px}
-#sv-note{white-space:pre-wrap;margin:8px 0 0;font-size:14px}
-.broker{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:16px}
-.broker .bn{font-weight:700}
-.broker .bp{font-family:var(--mono);user-select:all}
-.broker .acts{display:flex;gap:8px;flex-wrap:wrap}
-.disc{font-size:12px;color:var(--muted);margin-top:14px}
-body.share .tabs,body.share .pane,body.share .head p,body.share .src{display:none!important}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-</style>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<div class="app">
-  <aside id="side">
-    <div class="head">
-      <h1>Quy hoạch Đà Nẵng 2050</h1>
-      <p>Quyết định 2016/QĐ-TTg ngày 21/10/2026 · tầm nhìn 2075</p>
-      <div class="src">Nguồn: <a href="https://danang.gov.vn/vi/w/phe-duyet-quy-hoach-chung-thanh-pho-da-nang-den-nam-2050-tam-nhin-den-nam-2075" target="_blank" rel="noopener">danang.gov.vn</a> · Ranh giới minh họa, chưa phải bản đồ quy hoạch chính thức</div>
-      <button class="toggle" id="toggle">Thu gọn</button>
-    </div>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-p="lookup">Tra cứu</button>
-      <button class="tab" role="tab" aria-selected="false" data-p="zones">Khu vực</button>
-      <button class="tab" role="tab" aria-selected="false" data-p="facts">Tóm tắt</button>
-    </div>
-    <div class="pane" id="lookup">
-      <form id="lk-form" class="lk-row">
-        <input class="inp" id="lk-input" placeholder="16.0544, 108.2022 · link Google Maps · VN2000" autocomplete="off">
-        <button class="btn" type="submit">Tra</button>
-      </form>
-      <p class="hint">Hoặc chạm vào bản đồ. Toạ độ VN2000 trên sổ đỏ nhập dạng: X 1775432 Y 554210.</p>
-      <button class="btn ghost" id="lk-gps" type="button" style="margin-top:8px">Dùng vị trí hiện tại của tôi</button>
-      <p id="lk-msg" aria-live="polite"></p>
-      <div id="lk-result"></div>
-      <div id="lk-share" class="card2" hidden>
-        <h3>Tạo trang gửi khách</h3>
-        <form id="sh-form" style="display:grid;gap:8px">
-          <label>Tiêu đề lô<input class="inp" id="sh-title" maxlength="80" placeholder="Lô 100 m² đường 7,5 m, Hòa Xuân"></label>
-          <label>Giá<input class="inp" id="sh-price" maxlength="40" placeholder="3,2 tỷ"></label>
-          <label>Ghi chú cho khách<textarea class="inp" id="sh-note" maxlength="300" placeholder="Sổ hồng riêng, hướng Đông Nam, gần trường học"></textarea></label>
+<div id="map" aria-label="Bản đồ quy hoạch"></div>
+
+<!-- Thanh tìm kiếm nổi -->
+<div class="topbar" id="topbar">
+  <form class="search" id="search-form" role="search">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="q" type="search" enterkeyhint="search" autocomplete="off" placeholder="Địa chỉ, toạ độ, VN2000, tờ 12 thửa 345" aria-label="Tìm vị trí">
+    <button type="button" class="iconbtn" id="btn-clear" aria-label="Xoá" hidden><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </form>
+  <div class="suggest" id="suggest" hidden></div>
+</div>
+
+<!-- Nút trên bản đồ -->
+<div class="fab-col" id="fabs">
+  <button class="fab" id="btn-layers" aria-label="Lớp bản đồ" title="Lớp bản đồ"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+  <button class="fab" id="btn-measure" aria-label="Đo khoảng cách, diện tích" title="Đo"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg></button>
+  <button class="fab" id="btn-gps" aria-label="Vị trí của tôi" title="Vị trí của tôi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+</div>
+
+<div class="layers" id="layers-panel" hidden>
+  <div class="lp-h">Bản đồ nền</div>
+  <div class="seg" id="base-seg">
+    <button data-base="osm" aria-pressed="true">Đường phố</button>
+    <button data-base="sat" aria-pressed="false">Vệ tinh</button>
+    <button data-base="gray" aria-pressed="false">Xám</button>
+  </div>
+  <div class="lp-h">Lớp phủ</div>
+  <label class="chk"><input type="checkbox" id="ov-zones" checked> Vùng tiềm năng (minh hoạ)</label>
+  <label class="chk"><input type="checkbox" id="ov-reclaim" checked> Khu lấn biển</label>
+  <label class="chk"><input type="checkbox" id="ov-infra" checked> Hạ tầng giao thông</label>
+  <label class="chk"><input type="checkbox" id="ov-poi" checked> Điểm mốc</label>
+  <label class="chk" id="ov-planning-row" hidden><input type="checkbox" id="ov-planning" checked> <span id="ov-planning-name"></span></label>
+  <div class="legend" id="legend"></div>
+</div>
+
+<!-- Thanh đo -->
+<div class="measurebar" id="measurebar" hidden>
+  <div class="mb-val"><b id="m-len">Chạm lên bản đồ để đặt điểm</b><span id="m-area"></span></div>
+  <div class="mb-acts"><button class="btn ghost sm" id="m-undo">Xoá điểm cuối</button><button class="btn sm" id="m-done">Xong</button></div>
+</div>
+
+<!-- Bảng thông tin: bottom sheet trên điện thoại, panel trái trên máy tính -->
+<section class="sheet" id="sheet" data-state="peek" aria-label="Thông tin">
+  <div class="grab" id="grab" aria-hidden="true"><span></span></div>
+  <header class="sh-head">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><div><b>Quy hoạch Đà Nẵng 2050</b><small>QĐ 2016/QĐ-TTg · ranh giới minh hoạ</small></div></div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="place" aria-selected="true">Vị trí</button>
+      <button role="tab" data-tab="saved" aria-selected="false">Đã lưu <span class="badge" id="saved-count" hidden></span></button>
+      <button role="tab" data-tab="zones" aria-selected="false">Vùng</button>
+      <button role="tab" data-tab="facts" aria-selected="false">Tóm tắt</button>
+    </nav>
+  </header>
+
+  <div class="sh-body" id="sh-body">
+    <!-- Vị trí -->
+    <div class="pane" id="pane-place">
+      <div id="place-empty" class="empty">
+        <h3>Lô đất này thuộc vùng quy hoạch nào?</h3>
+        <p>Tìm địa chỉ, dán toạ độ hoặc link Google Maps, nhập toạ độ VN2000 trên sổ đỏ, hoặc chạm vào bản đồ.</p>
+        <div class="tips">
+          <button class="tip" data-q="16.0612, 108.2272">16.0612, 108.2272</button>
+          <button class="tip" data-q="X 1777000 Y 551000">X 1777000 Y 551000</button>
+          <button class="tip" data-q="Nguyễn Văn Linh, Đà Nẵng">Nguyễn Văn Linh</button>
+        </div>
+      </div>
+      <div id="place" hidden>
+        <div class="place-h">
+          <div class="addr" id="p-addr"></div>
+          <button class="coord" id="p-coord" title="Copy toạ độ"></button>
+          <div class="note" id="p-note" hidden></div>
+        </div>
+        <div class="actions">
+          <button class="act" id="a-save"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span>Lưu lô</span></button>
+          <button class="act" id="a-share"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span>Gửi khách</span></button>
+          <button class="act" id="a-post"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span>Copy tin</span></button>
+          <a class="act" id="a-dir" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2l9 9-9 9-9-9z"/><path d="M9 14v-3h5V9l3 3-3 3v-2h-3v1z"/></svg><span>Chỉ đường</span></a>
+        </div>
+        <div id="p-zone"></div>
+        <div id="p-official"></div>
+        <div class="subh">Khoảng cách đường chim bay</div>
+        <div class="dist" id="p-dist"></div>
+
+        <form class="card" id="lot-form" hidden>
+          <h3 id="lot-form-h">Thông tin lô</h3>
+          <label>Tiêu đề<input class="inp" id="f-title" maxlength="80" placeholder="Lô 100 m² đường 7,5 m, Hòa Xuân"></label>
           <div class="grid2">
-            <label>Tên môi giới<input class="inp" id="sh-name" maxlength="50"></label>
-            <label>Số điện thoại / Zalo<input class="inp" id="sh-phone" maxlength="15" inputmode="tel"></label>
+            <label>Giá<input class="inp" id="f-price" maxlength="40" placeholder="3,2 tỷ"></label>
+            <label>Diện tích<input class="inp" id="f-area" maxlength="20" placeholder="100 m²"></label>
           </div>
-          <button class="btn" type="submit">Tạo link</button>
+          <label>Ghi chú cho khách<textarea class="inp" id="f-note" maxlength="300" placeholder="Sổ hồng riêng, hướng Đông Nam, gần trường học"></textarea></label>
+          <div class="grid2">
+            <label>Tên môi giới<input class="inp" id="f-name" maxlength="50"></label>
+            <label>SĐT / Zalo<input class="inp" id="f-phone" maxlength="15" inputmode="tel"></label>
+          </div>
+          <div class="row"><button class="btn" type="submit" id="f-submit">Tạo link</button><button class="btn ghost" type="button" id="f-cancel">Huỷ</button></div>
         </form>
-        <div id="lk-link" hidden style="display:grid;gap:8px">
-          <input class="inp" id="sh-url" readonly>
-          <div class="lk-row"><button class="btn" id="sh-copy" type="button">Copy link</button><a class="btn ghost" id="sh-open" target="_blank" rel="noopener">Xem thử</a></div>
-          <p class="hint">Gửi link qua Zalo cho khách. Thông tin nằm ngay trong link, không lưu trên máy chủ.</p>
+        <div class="card" id="share-out" hidden>
+          <h3>Link gửi khách</h3>
+          <input class="inp mono" id="share-url" readonly>
+          <div class="row"><button class="btn" type="button" id="share-copy">Copy link</button><a class="btn ghost" id="share-open" target="_blank" rel="noopener">Xem thử</a></div>
+          <p class="hint">Gửi qua Zalo: khách thấy tiêu đề, giá và nút gọi cho bạn. Thông tin nằm trong link, không lưu trên máy chủ.</p>
         </div>
       </div>
     </div>
-    <div class="pane" id="zones" hidden>
+
+    <!-- Đã lưu -->
+    <div class="pane" id="pane-saved" hidden>
+      <div id="saved-empty" class="empty"><h3>Chưa có lô nào</h3><p>Tra một vị trí rồi bấm "Lưu lô". Danh sách được lưu trên máy này.</p></div>
+      <div id="saved-list" class="saved"></div>
+    </div>
+
+    <!-- Vùng -->
+    <div class="pane" id="pane-zones" hidden>
       <div class="chips" id="chips"></div>
-      <div id="list"></div>
+      <div id="zone-list"></div>
     </div>
-    <div class="pane" id="facts" hidden>
-      <div class="facts">
-        <div><h3>Cấu trúc không gian</h3><p>Chuỗi đô thị đa cực theo mô hình "3 vùng – 3 cực – 2 trục – 4 hành lang".</p></div>
-        <div><h3>3 cực phát triển</h3><ul>
-          <li><b>Cực Bắc:</b> Đà Nẵng hiện hữu và mở rộng, Điện Bàn, Hội An, đô thị lấn biển. Tài chính, du lịch, CNC, logistics.</li>
-          <li><b>Cực Nam:</b> Chu Lai, Tam Kỳ, Núi Thành. Công nghiệp, năng lượng, logistics, đổi mới sáng tạo.</li>
-          <li><b>Cực liên kết Nam Hội An:</b> Duy Xuyên, Thăng Bình, Quế Sơn. Đô thị mới, du lịch, thương mại.</li></ul></div>
-        <div><h3>Dân số dự báo 2050</h3><div class="kv">
-          <span>6,5 tr</span><span>Toàn thành phố (thường trú ~5,4 tr)</span>
-          <span>2,26 tr</span><span>Đô thị Đà Nẵng, trong đó lấn biển ~400.000</span>
-          <span>605.000</span><span>Điện Bàn</span>
-          <span>275.000</span><span>Tam Kỳ</span>
-          <span>230.000</span><span>Hội An</span></div></div>
-        <div><h3>Quy mô khu chức năng</h3><div class="kv">
-          <span>2.050 ha</span><span>Lấn biển (vịnh ĐN 1.500, Liên Chiểu 450, Nam Sơn Trà 100)</span>
-          <span>1.710 ha</span><span>Khu công nghệ cao mở rộng</span>
-          <span>341 ha</span><span>Khu CNTT tập trung</span>
-          <span>27.040 ha</span><span>Khu kinh tế mở Chu Lai</span>
-          <span>31.060 ha</span><span>Khu kinh tế cửa khẩu Nam Giang</span></div></div>
-        <div><h3>Phân kỳ</h3><ul>
-          <li><b>2026–2030:</b> hoàn thiện quy hoạch phân khu, hạ tầng khung, FTZ, IFC, lấn biển (khi đủ điều kiện).</li>
-          <li><b>2030–2040:</b> hoàn thiện chuỗi đô thị ven biển đa cực, metro, TOD.</li>
-          <li><b>2040–2050:</b> hoàn thiện cấu trúc đa cực, đa trung tâm.</li></ul></div>
-        <div><h3>Chưa có trong bài</h3><p>Vị trí ga đường sắt tốc độ cao, tuyến metro và khu TOD sẽ được cụ thể hóa trong quy hoạch phân khu. Lớp "Hạ tầng" trên bản đồ chỉ vẽ các tuyến đã có hoặc đã được nêu tên.</p></div>
-        <div><h3>Lưu ý</h3><p>Mức tiềm năng là nhận định từ văn bản quy hoạch, không phải tư vấn đầu tư. Ranh giới vẽ gần đúng; luôn tra quy hoạch sử dụng đất của từng thửa trước khi giao dịch.</p></div>
+
+    <!-- Tóm tắt -->
+    <div class="pane facts" id="pane-facts" hidden>
+      <div><h3>Cấu trúc không gian</h3><p>Chuỗi đô thị đa cực theo mô hình "3 vùng – 3 cực – 2 trục – 4 hành lang".</p></div>
+      <div><h3>3 cực phát triển</h3><ul>
+        <li><b>Cực Bắc:</b> Đà Nẵng hiện hữu và mở rộng, Điện Bàn, Hội An, đô thị lấn biển.</li>
+        <li><b>Cực Nam:</b> Chu Lai, Tam Kỳ, Núi Thành.</li>
+        <li><b>Cực liên kết Nam Hội An:</b> Duy Xuyên, Thăng Bình, Quế Sơn.</li></ul></div>
+      <div><h3>Dân số dự báo 2050</h3><div class="kv">
+        <span>6,5 tr</span><span>Toàn thành phố (thường trú ~5,4 tr)</span>
+        <span>2,26 tr</span><span>Đô thị Đà Nẵng, trong đó lấn biển ~400.000</span>
+        <span>605.000</span><span>Điện Bàn</span>
+        <span>275.000</span><span>Tam Kỳ</span>
+        <span>230.000</span><span>Hội An</span></div></div>
+      <div><h3>Quy mô khu chức năng</h3><div class="kv">
+        <span>2.050 ha</span><span>Lấn biển (vịnh ĐN 1.500, Liên Chiểu 450, Nam Sơn Trà 100)</span>
+        <span>1.710 ha</span><span>Khu công nghệ cao mở rộng</span>
+        <span>341 ha</span><span>Khu CNTT tập trung</span>
+        <span>27.040 ha</span><span>Khu kinh tế mở Chu Lai</span>
+        <span>31.060 ha</span><span>Khu kinh tế cửa khẩu Nam Giang</span></div></div>
+      <div><h3>Phân kỳ</h3><ul>
+        <li><b>2026–2030:</b> quy hoạch phân khu, hạ tầng khung, FTZ, IFC, lấn biển (khi đủ điều kiện).</li>
+        <li><b>2030–2040:</b> chuỗi đô thị ven biển đa cực, metro, TOD.</li>
+        <li><b>2040–2050:</b> hoàn thiện cấu trúc đa cực, đa trung tâm.</li></ul></div>
+      <div><h3>Lưu ý</h3><p>Vùng trên bản đồ được vẽ minh hoạ từ nội dung quyết định, không phải bản đồ quy hoạch chính thức. Mức tiềm năng là nhận định, không phải tư vấn đầu tư. Luôn kiểm tra quy hoạch sử dụng đất của thửa tại cơ quan có thẩm quyền.</p>
+      <p class="src">Nguồn: <a href="https://danang.gov.vn/vi/w/phe-duyet-quy-hoach-chung-thanh-pho-da-nang-den-nam-2050-tam-nhin-den-nam-2075" target="_blank" rel="noopener">danang.gov.vn</a> · Địa chỉ: © OpenStreetMap contributors (Nominatim)</p></div>
+    </div>
+
+    <!-- Trang của khách -->
+    <div class="pane" id="pane-guest" hidden>
+      <div class="guest-h">
+        <h2 id="g-title"></h2>
+        <div class="g-meta"><span class="price" id="g-price"></span><span id="g-area"></span></div>
+        <div class="addr" id="g-addr"></div>
+        <p class="g-note" id="g-note"></p>
       </div>
+      <div id="g-zone"></div>
+      <div id="g-official"></div>
+      <div class="subh">Khoảng cách đường chim bay</div>
+      <div class="dist" id="g-dist"></div>
+      <p class="disc">Vùng quy hoạch được vẽ minh hoạ từ Quyết định 2016/QĐ-TTg, chưa phải bản đồ quy hoạch chính thức. Hãy kiểm tra quy hoạch sử dụng đất của thửa tại cơ quan có thẩm quyền trước khi giao dịch.</p>
+      <a class="btn ghost" href="./">Mở bản đồ quy hoạch đầy đủ</a>
     </div>
-    <div id="shareview" hidden>
-      <h2 id="sv-title"></h2>
-      <div id="sv-price"></div>
-      <p id="sv-note"></p>
-      <div id="sv-info"></div>
-      <div class="broker" id="sv-broker">
-        <div class="bn" id="sv-bname"></div>
-        <div class="bp" id="sv-bphone"></div>
-        <div class="acts"><a class="btn" id="sv-call">Gọi</a><a class="btn ghost" id="sv-zalo" target="_blank" rel="noopener">Zalo</a><a class="btn ghost" id="sv-gmaps" target="_blank" rel="noopener">Chỉ đường</a></div>
-      </div>
-      <p class="disc">Vùng quy hoạch trên trang này được vẽ minh họa từ Quyết định 2016/QĐ-TTg, chưa phải bản đồ quy hoạch chính thức. Hãy kiểm tra quy hoạch sử dụng đất của thửa đất tại cơ quan có thẩm quyền trước khi giao dịch.</p>
-      <a class="btn ghost" href="./" style="margin-top:6px">Xem toàn bộ bản đồ quy hoạch</a>
-    </div>
-  </aside>
-  <div class="mapwrap"><div id="map"></div></div>
-</div>
+  </div>
+
+  <!-- Liên hệ môi giới (trang của khách) -->
+  <div class="contact" id="contact" hidden>
+    <div class="c-who"><b id="c-name"></b><span id="c-phone"></span></div>
+    <a class="btn" id="c-call">Gọi</a>
+    <a class="btn ghost" id="c-zalo" target="_blank" rel="noopener">Zalo</a>
+  </div>
+</section>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script>
-const TIER={
-  "1":{c:"#c0264f",n:"Động lực trực tiếp (2026–2035)"},
-  "2":{c:"#d4860b",n:"Đô thị loại II / cực Nam"},
-  "3":{c:"#2c8a62",n:"Dài hạn (2035–2050)"},
-  "c":{c:"#7d8a91",n:"Hạn chế phát triển"}
-};
-const Z=[
- {id:1,t:"1",name:"Cảng Liên Chiểu – Hòa Hiệp",h:"Cảng cửa ngõ, logistics, FTZ",
-  poly:[[16.142,108.118],[16.140,108.138],[16.124,108.140],[16.110,108.133],[16.112,108.115]],
-  why:["Dự án ưu tiên hàng đầu về logistics và giao thương quốc tế","Kết nối trực tiếp Khu thương mại tự do, Khu CNC, hành lang Đông – Tây"],
-  risk:"Hợp đất kho bãi, nhà trọ, dịch vụ phục vụ cảng hơn nhà ở cao cấp."},
- {id:2,t:"1",name:"Trục Nguyễn Tất Thành – IFC",h:"Trục chính Trung tâm Tài chính quốc tế",
-  poly:[[16.112,108.140],[16.100,108.152],[16.088,108.168],[16.080,108.183],[16.075,108.198],[16.078,108.212],[16.071,108.215],[16.068,108.198],[16.074,108.180],[16.083,108.163],[16.095,108.146],[16.106,108.134]],
-  why:["IFC phát triển dọc Nguyễn Tất Thành và hai bên sông Hàn","Nằm ngay sau khu lấn biển vịnh Đà Nẵng 1.500 ha"],
-  risk:"Giá mặt tiền biển đã cao; dư địa lớn hơn ở các lô phía sau tuyến."},
- {id:3,t:"1",name:"CBD An Đồn",h:"Khu tài chính tập trung, ven sông Hàn",
-  poly:[[16.0890,108.2290],[16.0880,108.2400],[16.0740,108.2410],[16.0715,108.2300]],
-  why:["Được nêu tên là CBD, kết nối trục Phạm Văn Đồng – Võ Văn Kiệt","Gần khu lấn biển Nam Sơn Trà"],
-  risk:"Thuộc nhóm giá cao nhất thành phố; phần trăm tăng có thể thấp hơn vùng ven."},
- {id:4,t:"1",name:"Khu Công nghệ cao mở rộng",h:"1.710 ha · Liên Chiểu và Bà Nà",
-  poly:[[16.125,108.030],[16.125,108.095],[16.090,108.105],[16.070,108.070],[16.085,108.030]],
-  why:["Bán dẫn, AI, công nghệ sinh học, năng lượng sạch","Thành phố đang mời nhà máy pin ô tô vào đây"],
-  risk:"Nhà ở chuyên gia tăng theo tốc độ lấp đầy nhà máy, không theo quy hoạch."},
- {id:5,t:"1",name:"Hòa Xuân – Nam Ngũ Hành Sơn",h:"Aeon Mall Hòa Xuân sắp khởi công",
-  poly:[[16.028,108.208],[16.025,108.240],[15.995,108.258],[15.975,108.262],[15.972,108.238],[15.990,108.210]],
-  why:["Khởi công Aeon Mall bên lề hội nghị công bố quy hoạch","Cầu nối lõi Đà Nẵng với Điện Bàn – Hội An trên trục ven biển"],
-  risk:"Nguồn cung đất nền, căn hộ lớn; cạnh tranh cao."},
- {id:6,t:"2",name:"Điện Bàn (Điện Ngọc – Điện Nam)",h:"Đô thị loại II · 605.000 dân 2050",
-  poly:[[15.970,108.235],[15.966,108.276],[15.935,108.300],[15.905,108.322],[15.886,108.300],[15.885,108.255],[15.905,108.218],[15.945,108.213]],
-  why:["Đô thị động lực gắn Đà Nẵng và Hội An","Quy mô dân số 2050 lớn nhất sau lõi Đà Nẵng"],
-  risk:"Từng sốt rồi đóng băng; nhiều dự án vướng pháp lý. Chọn khu đã có sổ, hạ tầng xong."},
- {id:7,t:"2",name:"Chu Lai – Núi Thành",h:"Trung tâm logistics quốc gia, sân bay",
-  poly:[[15.465,108.600],[15.470,108.650],[15.440,108.690],[15.400,108.722],[15.370,108.700],[15.375,108.630],[15.420,108.595]],
-  why:["Logistics tích hợp biển – hàng không – bộ – sắt","Nâng cấp sân bay Chu Lai; thêm 3 KCN tại Núi Thành, Tam Anh"],
-  risk:"Cách trung tâm Đà Nẵng ~90 km; phụ thuộc tiến độ sân bay và việc làm."},
- {id:8,t:"2",name:"Tam Kỳ",h:"Đô thị loại II · 275.000 dân 2050",
-  poly:[[15.610,108.440],[15.605,108.525],[15.550,108.540],[15.535,108.470],[15.565,108.430]],
-  why:["Đầu mối tuyến xuyên biển nối Khu kinh tế mở Chu Lai","Trung tâm nghiên cứu, y tế, giáo dục của cực Nam"],
-  risk:"Mất vai trò tỉnh lỵ sau sáp nhập; cần thời gian bù việc làm."},
- {id:9,t:"3",name:"Cực Nam Hội An",h:"Duy Nghĩa · Thăng An · Thăng Trường · Thăng Điền",
-  poly:[[15.862,108.378],[15.835,108.400],[15.760,108.440],[15.690,108.485],[15.668,108.465],[15.738,108.418],[15.815,108.372]],
-  why:["Cực liên kết thứ ba: đô thị mới, du lịch, thương mại","Cầu Bình Dương, Hưng Mỹ, kênh thoát lũ đang giải phóng mặt bằng"],
-  risk:"Hoàn thiện chủ yếu 2030–2040; vùng trũng Trường Giang dễ ngập."},
- {id:10,t:"3",name:"Hòa Vang – Hòa Tiến",h:"Đô thị mở rộng phía Tây",
-  poly:[[16.010,108.105],[16.010,108.185],[15.955,108.200],[15.940,108.130],[15.965,108.100]],
-  why:["Nằm giữa sân bay, cao tốc và Khu CNC","Quỹ đất lớn cho mở rộng đô thị lõi"],
-  risk:"Nhiều đất nông nghiệp; vị trí ga tốc độ cao chưa công bố."},
- {id:11,t:"3",name:"Đại Lộc – Vu Gia",h:"Vùng công nghiệp mới phía Tây cao tốc",
-  poly:[[15.910,108.040],[15.910,108.150],[15.860,108.160],[15.835,108.070],[15.860,108.030]],
-  why:["Dọc QL14B, 14E, ĐT611","Vu Gia là một trong 7 đô thị mới"],
-  risk:"Chủ yếu đất công nghiệp, nhà ở công nhân; tăng chậm."},
- {id:12,t:"c",name:"Bán đảo Sơn Trà",h:"Khu du lịch quốc gia, kiểm soát nghiêm",
-  poly:[[16.104,108.262],[16.122,108.232],[16.138,108.243],[16.152,108.262],[16.140,108.298],[16.146,108.328],[16.128,108.336],[16.108,108.312],[16.103,108.285]],
-  why:["Bảo vệ voọc chà vá chân nâu, giữ 'rừng trong phố'"],risk:"Rất khó có dự án mới."},
- {id:13,t:"c",name:"Phố cổ Hội An",h:"Bảo tồn di sản",
-  poly:[[15.884,108.318],[15.884,108.340],[15.873,108.341],[15.872,108.318]],
-  why:["Tam giác di sản Hội An – Cù Lao Chàm – Mỹ Sơn"],risk:"Hợp kinh doanh lưu trú hơn chờ tăng giá theo hạ tầng."},
- {id:14,t:"c",name:"Bà Nà – Núi Chúa",h:"Rừng nguyên sinh, bảo vệ nghiêm ngặt",
-  poly:[[16.040,107.950],[16.040,108.035],[15.975,108.040],[15.955,107.965]],
-  why:["Khu du lịch quốc gia sinh thái, nghỉ dưỡng"],risk:"Không phải nơi mua đất chờ tăng giá."}
-];
-const RECLAIM=[
- {name:"Lấn biển vịnh Đà Nẵng · ~1.500 ha",poly:[[16.1040,108.1730],[16.1180,108.1620],[16.1290,108.1800],[16.1220,108.2060],[16.1020,108.2130],[16.0920,108.1960]]},
- {name:"Lấn biển cảng Liên Chiểu · ~450 ha",poly:[[16.1250,108.1480],[16.1420,108.1520],[16.1400,108.1720],[16.1220,108.1660]]},
- {name:"Lấn biển Nam Sơn Trà · ~100 ha",poly:[[16.0965,108.2650],[16.0990,108.2730],[16.0925,108.2770],[16.0895,108.2630]]}
-];
-const POI=[
- ["Cảng Liên Chiểu",16.128,108.137,"Cảng cửa ngõ quốc tế, dự án ưu tiên"],
- ["Sân bay quốc tế Đà Nẵng",16.0439,108.1994,"Cửa ngõ phía Bắc"],
- ["Sân bay Chu Lai",15.4033,108.7059,"Nâng cấp, mở rộng kèm trung tâm logistics hàng không"],
- ["Cảng Tiên Sa",16.121,108.215,"Cảng hiện hữu"],
- ["Cù Lao Chàm",15.953,108.513,"Khu du lịch quốc gia, dự trữ sinh quyển thế giới"],
- ["KKT cửa khẩu Nam Giang",15.745,107.47,"31.060 ha · cửa ngõ sang Nam Lào, Đông Bắc Thái Lan"],
- ["Khu CNTT tập trung",16.005,108.135,"341 ha (vị trí gần đúng)"]
-];
-const LINES=[
- {name:"Cao tốc Bắc – Nam",c:"#8a5a2b",d:"8 5",pts:[[16.135,108.105],[16.06,108.125],[15.99,108.150],[15.90,108.185],[15.78,108.270],[15.66,108.360],[15.55,108.440],[15.45,108.560],[15.34,108.660]]},
- {name:"Trục ven biển Hoàng Sa – Võ Nguyên Giáp – Trường Sa",c:"#1f7fb0",d:null,pts:[[16.098,108.256],[16.088,108.2495],[16.0717,108.2465],[16.05,108.249],[16.03,108.254],[16.00,108.266],[15.975,108.280],[15.94,108.300],[15.915,108.336],[15.895,108.360]]},
- {name:"QL14B (hành lang công nghiệp phía Tây)",c:"#6b4fa0",d:"4 4",pts:[[16.00,108.170],[15.95,108.090],[15.90,108.000],[15.87,107.90],[15.80,107.84]]},
- {name:"QL14D → cửa khẩu Nam Giang",c:"#6b4fa0",d:"4 4",pts:[[15.79,107.84],[15.77,107.70],[15.76,107.58],[15.745,107.47]]}
-];
-
-const map=L.map('map',{zoomControl:true}).setView([15.82,108.30],10);
-const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
-const light=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Tiles © Esri'});
-const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
-osm.addTo(map);
-
-const zoneLayer=L.layerGroup().addTo(map), reclaimLayer=L.layerGroup().addTo(map), infraLayer=L.layerGroup().addTo(map), poiLayer=L.layerGroup().addTo(map);
-const polys={}, pins={};
-const popupHtml=z=>`<h4>${z.id}. ${z.name}</h4><div style="color:${TIER[z.t].c};font-weight:600;font-size:12px">${TIER[z.t].n}</div><div style="margin-top:4px">${z.h}</div>`;
-Z.forEach(z=>{
-  const c=TIER[z.t].c;
-  const p=L.polygon(z.poly,{color:c,weight:2,fillColor:c,fillOpacity:.22,dashArray:z.t==='c'?'5 4':null}).bindPopup(popupHtml(z));
-  p.on('click',()=>select(z.id,false));
-  p.addTo(zoneLayer);polys[z.id]=p;
-  const ctr=p.getBounds().getCenter();
-  const m=L.marker(ctr,{icon:L.divIcon({className:'',html:`<div class="pin" style="background:${c};width:24px;height:24px">${z.id}</div>`,iconSize:[24,24],iconAnchor:[12,12]})}).bindPopup(popupHtml(z));
-  m.on('click',()=>select(z.id,false));m.addTo(zoneLayer);pins[z.id]=m;
-});
-RECLAIM.forEach(r=>L.polygon(r.poly,{color:'#0b5e86',weight:2,dashArray:'3 3',fillColor:'#3aa7d8',fillOpacity:.45}).bindPopup(`<h4>${r.name}</h4>Khu vực nghiên cứu lấn biển; ranh giới sẽ chốt trong quy hoạch chi tiết.`).addTo(reclaimLayer));
-LINES.forEach(l=>L.polyline(l.pts,{color:l.c,weight:3.5,dashArray:l.d,opacity:.85}).bindPopup(`<h4>${l.name}</h4>`).addTo(infraLayer));
-POI.forEach(([n,la,lo,d])=>L.circleMarker([la,lo],{radius:6,color:'#fff',weight:2,fillColor:'#14232b',fillOpacity:1}).bindPopup(`<h4>${n}</h4>${d}`).bindTooltip(n,{permanent:true,direction:'right',className:'lbl poi',offset:[6,0]}).addTo(poiLayer));
-
-L.control.layers({"OpenStreetMap":osm,"Bản đồ xám":light,"Vệ tinh":sat},{
-  "Khu vực tiềm năng":zoneLayer,"Khu lấn biển":reclaimLayer,"Hạ tầng giao thông":infraLayer,"Điểm mốc":poiLayer
-},{collapsed:window.innerWidth<820}).addTo(map);
-L.control.scale({imperial:false}).addTo(map);
-const legend=L.control({position:'bottomright'});
-legend.onAdd=()=>{const d=L.DomUtil.create('div','legend');
-  d.innerHTML=Object.values(TIER).map(t=>`<div><i style="background:${t.c}"></i>${t.n}</div>`).join('')+
-  `<div><i style="background:#3aa7d8"></i>Lấn biển</div><div><i class="ln" style="border-color:#8a5a2b"></i>Cao tốc</div>`;return d};
-legend.addTo(map);
-
-// sidebar
-const list=document.getElementById('list'), chips=document.getElementById('chips');
-const items={};
-Z.forEach(z=>{
-  const b=document.createElement('button');b.className='item';b.id='z'+z.id;
-  b.innerHTML=`<span class="n" style="background:${TIER[z.t].c}">${z.id}</span><span><b>${z.name}</b><small>${z.h}</small></span>`;
-  const d=document.createElement('div');d.className='detail';
-  d.innerHTML=`<ul>${z.why.map(w=>`<li>${w}</li>`).join('')}</ul><div class="risk"><b>Lưu ý:</b> ${z.risk}</div>`;
-  b.onclick=()=>select(z.id,true);
-  list.append(b,d);items[z.id]={b,d};
-});
-let filt='all';
-[["all","Tất cả",null],...Object.entries(TIER).map(([k,v])=>[k,v.n,v.c])].forEach(([k,n,c])=>{
-  const b=document.createElement('button');b.className='chip';b.id='f-'+k;b.setAttribute('aria-pressed',k==='all');
-  b.innerHTML=(c?`<span class="dot" style="background:${c}"></span>`:'')+n;
-  b.onclick=()=>{filt=k;chips.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===b));
-    Z.forEach(z=>{const on=k==='all'||z.t===k;items[z.id].b.hidden=!on;items[z.id].d.hidden=!on;
-      if(on){polys[z.id].addTo(zoneLayer);pins[z.id].addTo(zoneLayer)}else{zoneLayer.removeLayer(polys[z.id]);zoneLayer.removeLayer(pins[z.id])}});};
-  chips.appendChild(b);
-});
-function select(id,fly){
-  Z.forEach(z=>{items[z.id].b.classList.toggle('sel',z.id===id);polys[z.id].setStyle({weight:z.id===id?4:2,fillOpacity:z.id===id?.38:.22})});
-  if(fly){map.flyToBounds(polys[id].getBounds(),{padding:[40,40],maxZoom:13,duration:.8});pins[id].openPopup();
-    const side=document.getElementById('side');side.classList.remove('min');}
-  else items[id].b.scrollIntoView({block:'nearest',behavior:'smooth'});
-}
-// tabs
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
-  ['lookup','zones','facts'].forEach(id=>document.getElementById(id).hidden=t.dataset.p!==id);});
-// mobile toggle
-const tg=document.getElementById('toggle'),side=document.getElementById('side');
-tg.onclick=()=>{side.classList.toggle('min');tg.textContent=side.classList.contains('min')?'Mở rộng':'Thu gọn';setTimeout(()=>map.invalidateSize(),300)};
-
-// nhãn điểm mốc chỉ hiện khi đủ gần để không chồng lên nhau
-function labels(){const on=map.getZoom()>=11;document.querySelectorAll('.lbl.poi').forEach(e=>e.classList.toggle('off',!on))}
-map.on('zoomend',labels);
-// canh khung theo dữ liệu sau khi layout xong (điện thoại: khung nhìn vùng lõi Bắc)
-function fit(){map.invalidateSize();
-  const b=window.innerWidth<820?L.latLngBounds([[16.16,108.03],[15.85,108.36]]):zoneLayer.getLayers().reduce((a,l)=>a.extend(l.getBounds?l.getBounds():l.getLatLng()),L.latLngBounds([]));
-  map.fitBounds(b,{padding:[20,20]});labels();}
-window.addEventListener('load',fit);
-let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>map.invalidateSize(),150)});
-</script>
-<script src="lookup.js"></script>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
