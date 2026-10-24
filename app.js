@@ -931,6 +931,32 @@
   });
   $('#pf-copy').addEventListener('click', () => copyText(`${$('#pf-title').value.trim()}\n\n${$('#pf-body').value.trim()}`, 'Đã sao chép tin rao!'));
   $('#pf-copy-top').addEventListener('click', () => $('#pf-copy').click());
+
+  // đăng lên Facebook/Zalo: web không được phép tự đăng, nên copy sẵn rồi mở ứng dụng/trang để dán
+  const fullText = () => `${$('#pf-title').value.trim()}\n\n${$('#pf-body').value.trim()}`;
+  const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const lotLink = () => { const lk = pf.sug.find((x) => x.kind === 'link'); return lk ? lk.text : ''; };
+  async function nativeShare(text) {
+    if (!navigator.share) return false;
+    try { await navigator.share({ title: $('#pf-title').value.trim(), text }); return true; }
+    catch (e) { return e && e.name === 'AbortError'; } // người dùng tự huỷ thì coi như xong
+  }
+  $('#pf-fb').addEventListener('click', () => {
+    copyText(fullText(), 'Đã copy tin. Dán vào bài viết Facebook để đăng.'); // không chờ, để trình duyệt không chặn cửa sổ mới
+    // có link lô đất thì mở hộp chia sẻ link (Facebook hiện ảnh xem trước); không thì mở Facebook
+    const link = lotLink();
+    const url = link ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}` : 'https://www.facebook.com/';
+    window.open(url, '_blank', 'noopener');
+  });
+  $('#pf-zalo').addEventListener('click', async () => {
+    if (isMobile() && await nativeShare(fullText())) return; // điện thoại: bảng chia sẻ của máy, chọn Zalo
+    copyText(fullText(), 'Đã copy tin. Dán vào cuộc trò chuyện Zalo để gửi.');
+    window.open('https://chat.zalo.me/', '_blank', 'noopener');
+  });
+  $('#pf-share').addEventListener('click', async () => {
+    if (await nativeShare(fullText())) return;
+    copyText(fullText(), 'Máy không hỗ trợ chia sẻ trực tiếp, đã copy tin để bạn dán.');
+  });
   $('#pf-sample').addEventListener('click', () => { writeForm(LG.SAMPLE); $('#pf-sample-note').hidden = false; ['area', 'phone'].forEach((k) => showErr(k, '')); saveDraft(); toast('Đã điền dữ liệu minh họa'); });
   $('#pf-reset').addEventListener('click', () => {
     const b = $('#pf-reset');
@@ -1020,6 +1046,14 @@
   if (sp) { try { guest = b64.dec(sp); } catch (_) {} }
   if (guest && typeof guest.la === 'number' && typeof guest.lo === 'number' && inDN(guest.la, guest.lo)) guestMode(guest);
   window.addEventListener('resize', () => map.invalidateSize());
+  // máy tính: ẩn/hiện bảng bên trái
+  function setPanel(hidden) {
+    document.body.classList.toggle('panel-hidden', hidden); store.set('qh_panel_hidden', hidden);
+    $('#panel-toggle').setAttribute('aria-expanded', !hidden);
+    setTimeout(() => map.invalidateSize(), 280);
+  }
+  setPanel(store.get('qh_panel_hidden', false));
+  $('#panel-toggle').addEventListener('click', () => setPanel(!document.body.classList.contains('panel-hidden')));
 
   // cho phép kiểm thử logic từ console / node
   window.__qh = { parseInput, analyze, fmtKm, postText, b64, parseOverpass, nearbyLine, officialSummary, parcelInfo, queryParcel };

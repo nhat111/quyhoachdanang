@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241331">
+<link rel="stylesheet" href="app.css?v=202610241336">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -61,6 +61,7 @@
 </div>
 
 <!-- Bảng thông tin: bottom sheet trên điện thoại, panel trái trên máy tính -->
+<button class="panel-toggle" id="panel-toggle" aria-label="Ẩn/hiện bảng thông tin" title="Ẩn/hiện bảng thông tin"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
 <section class="sheet" id="sheet" data-state="peek" aria-label="Thông tin">
   <div class="grab" id="grab" aria-hidden="true"><span></span></div>
   <header class="sh-head">
@@ -233,6 +234,13 @@
           <button type="button" class="btn" id="pf-copy">Sao chép toàn bộ tin</button>
           <button type="button" class="btn ghost" id="pf-again">Tạo phiên bản khác</button>
         </div>
+        <div class="lbl-t">Đăng lên</div>
+        <div class="share-row">
+          <button type="button" class="btn fb" id="pf-fb"><svg viewBox="0 0 24 24"><path d="M14 8h3V4h-3a4 4 0 0 0-4 4v3H7v4h3v6h4v-6h3l1-4h-4V8z"/></svg>Facebook</button>
+          <button type="button" class="btn zl" id="pf-zalo"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>Zalo</button>
+          <button type="button" class="btn ghost" id="pf-share"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>Khác…</button>
+        </div>
+        <p class="hint" id="pf-share-hint">Facebook và Zalo không cho web tự đăng bài. App sẽ copy sẵn nội dung và mở Facebook/Zalo, bạn chỉ cần dán (giữ ngón tay → Dán) rồi đăng.</p>
       </div>
     </div>
 
@@ -308,9 +316,9 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241331"></script>
-<script src="listing.js?v=202610241331"></script>
-<script src="data.js?v=202610241331"></script>
-<script src="app.js?v=202610241331"></script>
+<script src="config.js?v=202610241336"></script>
+<script src="listing.js?v=202610241336"></script>
+<script src="data.js?v=202610241336"></script>
+<script src="app.js?v=202610241336"></script>
 </body>
 </html>

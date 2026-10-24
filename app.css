@@ -241,7 +241,7 @@ textarea.body{min-height:280px;font-size:15px;line-height:1.55}
   body.composing .pf-back{display:grid}
   .road-row{grid-template-columns:1fr}
 }
-@media (min-width:900px){ body.composing{--panel:480px} }
+@media (min-width:900px){ body.composing{--panel-w:560px} }
 
 /* ---- dữ liệu Sở Xây dựng ---- */
 .ofsum{font-weight:700;font-size:15px;color:var(--fg);background:var(--brand-soft);border-radius:8px;padding:6px 10px;margin:0 0 8px}
@@ -269,15 +269,30 @@ textarea.body{min-height:280px;font-size:15px;line-height:1.55}
 .amk.sm{width:22px;height:22px;border-width:0;box-shadow:none}
 .src{margin-top:10px}
 
+/* ---- chia sẻ tin ---- */
+.share-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.share-row .btn{min-height:48px;gap:6px;padding:10px 8px}
+.share-row svg{width:18px;height:18px}
+.btn.fb{background:#1877f2;color:#fff}
+.btn.zl{background:#0068ff;color:#fff}
+.panel-toggle{display:none}
+
 /* ---- máy tính: panel trái ---- */
 @media (min-width:900px){
-  #map{left:var(--panel)}
-  .sheet{top:0;bottom:0;right:auto;width:var(--panel);height:auto!important;max-height:none;border-radius:0;box-shadow:1px 0 0 var(--line);transform:none!important}
+  :root{--panel-w:460px}
+  body{--panel:var(--panel-w)}
+  body.panel-hidden{--panel:0px}
+  #map{left:var(--panel);transition:left .25s}
+  .sheet{top:0;bottom:0;right:auto;width:var(--panel-w);height:auto!important;max-height:none;border-radius:0;box-shadow:1px 0 0 var(--line);transform:none!important;transition:transform .25s,width .25s}
+  body.panel-hidden .sheet{transform:translateX(-100%)!important}
+  .panel-toggle{display:grid;position:fixed;z-index:1150;top:50%;left:var(--panel);transform:translateY(-50%);width:22px;height:56px;border:1px solid var(--line);border-left:0;border-radius:0 10px 10px 0;background:var(--bg);box-shadow:var(--shadow);place-items:center;cursor:pointer;color:var(--muted);transition:left .25s;padding:0}
+  .panel-toggle svg{width:16px;height:16px;transition:transform .25s}
+  body.panel-hidden .panel-toggle svg{transform:rotate(180deg)}
   body.measuring .sheet{transform:none}
   .grab{display:none}
   .sh-head{padding-top:16px}
-  .topbar{left:calc(var(--panel) + 16px);right:auto;width:min(440px,calc(100vw - var(--panel) - 100px))}
-  .measurebar{left:calc(var(--panel) + 16px);right:auto;width:min(520px,calc(100vw - var(--panel) - 32px))}
+  .topbar{left:calc(var(--panel) + 30px);right:auto;width:min(440px,calc(100vw - var(--panel) - 100px))}
+  .measurebar{left:calc(var(--panel) + 30px);right:auto;width:min(520px,calc(100vw - var(--panel) - 32px))}
   .toast{left:calc(50% + var(--panel) / 2)}
 }
 @media (prefers-reduced-motion:reduce){.sheet{transition:none}}
