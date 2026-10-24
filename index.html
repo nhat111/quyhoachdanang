@@ -51,7 +51,7 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
 .facts ul{padding-left:1rem}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13.5px}
 .kv span:nth-child(odd){font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:500;text-align:right}
-#map{height:100%;width:100%;background:#aad3df}
+#map{position:absolute;inset:0;background:#e8eef0}
 .leaflet-container{font-family:var(--font)}
 .lbl{background:transparent;border:0;box-shadow:none;font-weight:600;font-size:11px;color:#1b2a31;text-shadow:0 0 3px #fff,0 0 3px #fff}
 .pin{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;border-radius:50%;display:grid;place-items:center;border:2px solid #fff;box-shadow:0 1px 3px #0005}
@@ -71,7 +71,8 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
   .head{position:relative;padding-right:90px}
   .head p,.src{display:none}
 }
-.mapwrap{position:relative;min-height:0}
+.mapwrap{position:relative;min-height:0;height:100%}
+.lbl.off{display:none}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 </head>
@@ -209,9 +210,9 @@ const LINES=[
 
 const map=L.map('map',{zoomControl:true}).setView([15.82,108.30],10);
 const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
-const light=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19,attribution:'© OpenStreetMap © CARTO'});
+const light=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Tiles © Esri'});
 const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'});
-light.addTo(map);
+osm.addTo(map);
 
 const zoneLayer=L.layerGroup().addTo(map), reclaimLayer=L.layerGroup().addTo(map), infraLayer=L.layerGroup().addTo(map), poiLayer=L.layerGroup().addTo(map);
 const polys={}, pins={};
@@ -227,9 +228,9 @@ Z.forEach(z=>{
 });
 RECLAIM.forEach(r=>L.polygon(r.poly,{color:'#0b5e86',weight:2,dashArray:'3 3',fillColor:'#3aa7d8',fillOpacity:.45}).bindPopup(`<h4>${r.name}</h4>Khu vực nghiên cứu lấn biển; ranh giới sẽ chốt trong quy hoạch chi tiết.`).addTo(reclaimLayer));
 LINES.forEach(l=>L.polyline(l.pts,{color:l.c,weight:3.5,dashArray:l.d,opacity:.85}).bindPopup(`<h4>${l.name}</h4>`).addTo(infraLayer));
-POI.forEach(([n,la,lo,d])=>L.circleMarker([la,lo],{radius:6,color:'#fff',weight:2,fillColor:'#14232b',fillOpacity:1}).bindPopup(`<h4>${n}</h4>${d}`).bindTooltip(n,{permanent:true,direction:'right',className:'lbl',offset:[6,0]}).addTo(poiLayer));
+POI.forEach(([n,la,lo,d])=>L.circleMarker([la,lo],{radius:6,color:'#fff',weight:2,fillColor:'#14232b',fillOpacity:1}).bindPopup(`<h4>${n}</h4>${d}`).bindTooltip(n,{permanent:true,direction:'right',className:'lbl poi',offset:[6,0]}).addTo(poiLayer));
 
-L.control.layers({"Bản đồ sáng":light,"OpenStreetMap":osm,"Vệ tinh":sat},{
+L.control.layers({"OpenStreetMap":osm,"Bản đồ xám":light,"Vệ tinh":sat},{
   "Khu vực tiềm năng":zoneLayer,"Khu lấn biển":reclaimLayer,"Hạ tầng giao thông":infraLayer,"Điểm mốc":poiLayer
 },{collapsed:window.innerWidth<820}).addTo(map);
 L.control.scale({imperial:false}).addTo(map);
@@ -272,6 +273,16 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
 // mobile toggle
 const tg=document.getElementById('toggle'),side=document.getElementById('side');
 tg.onclick=()=>{side.classList.toggle('min');tg.textContent=side.classList.contains('min')?'Mở rộng':'Thu gọn';setTimeout(()=>map.invalidateSize(),300)};
+
+// nhãn điểm mốc chỉ hiện khi đủ gần để không chồng lên nhau
+function labels(){const on=map.getZoom()>=11;document.querySelectorAll('.lbl.poi').forEach(e=>e.classList.toggle('off',!on))}
+map.on('zoomend',labels);
+// canh khung theo dữ liệu sau khi layout xong (điện thoại: khung nhìn vùng lõi Bắc)
+function fit(){map.invalidateSize();
+  const b=window.innerWidth<820?L.latLngBounds([[16.16,108.03],[15.85,108.36]]):zoneLayer.getLayers().reduce((a,l)=>a.extend(l.getBounds?l.getBounds():l.getLatLng()),L.latLngBounds([]));
+  map.fitBounds(b,{padding:[20,20]});labels();}
+window.addEventListener('load',fit);
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>map.invalidateSize(),150)});
 </script>
 </body>
 </html>
