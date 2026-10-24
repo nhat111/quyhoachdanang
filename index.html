@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241514">
+<link rel="stylesheet" href="app.css?v=202610241635">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -43,7 +43,10 @@
   <button class="fab" id="btn-gps" aria-label="Vị trí của tôi" title="Vị trí của tôi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
 
-<div class="layers" id="layers-panel" hidden>
+<div class="backdrop" id="lp-backdrop" hidden></div>
+<div class="layers" id="layers-panel" role="dialog" aria-modal="true" aria-label="Lớp bản đồ" hidden>
+  <div class="lp-top"><b>Lớp bản đồ</b><button type="button" class="iconbtn" id="lp-close" aria-label="Đóng"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="lp-body">
   <div class="lp-h">Bản đồ nền</div>
   <div class="seg" id="base-seg">
     <button data-base="street" aria-pressed="true">Đường phố</button>
@@ -59,7 +62,9 @@
   <label class="chk"><input type="checkbox" id="ov-reclaim"> Khu lấn biển</label>
   <label class="chk"><input type="checkbox" id="ov-infra"> Trục giao thông</label>
   <label class="chk"><input type="checkbox" id="ov-poi"> Điểm mốc</label>
-  <div class="legend" id="legend"></div>
+  <details class="lgd"><summary>Chú giải vùng đánh số</summary><div class="legend" id="legend"></div></details>
+  </div>
+  <div class="lp-foot"><button type="button" class="btn" id="lp-done">Xong</button></div>
 </div>
 
 <!-- Thanh đo -->
@@ -324,10 +329,10 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241514"></script>
-<script src="listing.js?v=202610241514"></script>
-<script src="wards.js?v=202610241514"></script>
-<script src="data.js?v=202610241514"></script>
-<script src="app.js?v=202610241514"></script>
+<script src="config.js?v=202610241635"></script>
+<script src="listing.js?v=202610241635"></script>
+<script src="wards.js?v=202610241635"></script>
+<script src="data.js?v=202610241635"></script>
+<script src="app.js?v=202610241635"></script>
 </body>
 </html>

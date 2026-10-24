@@ -128,8 +128,16 @@
   // ---------- bảng lớp ----------
   $('#legend').innerHTML = Object.values(TIER).map((t) => `<div><i style="background:${t.c}"></i>${t.n}</div>`).join('') +
     '<div><i style="background:#3aa7d8"></i>Khu lấn biển</div>';
-  $('#btn-layers').addEventListener('click', (e) => { e.stopPropagation(); const p = $('#layers-panel'); p.hidden = !p.hidden; $('#btn-layers').setAttribute('aria-pressed', !p.hidden); });
-  document.addEventListener('click', (e) => { const p = $('#layers-panel'); if (!p.hidden && !p.contains(e.target) && e.target.closest('#btn-layers') == null) { p.hidden = true; $('#btn-layers').setAttribute('aria-pressed', 'false'); } });
+  // bảng lớp: điện thoại là bảng trượt từ dưới lên có nền mờ, máy tính là hộp nổi; đóng bằng ✕, Xong, chạm ra ngoài hoặc Esc
+  function setLayersPanel(open) {
+    $('#layers-panel').hidden = !open; $('#lp-backdrop').hidden = !open;
+    $('#btn-layers').setAttribute('aria-pressed', open);
+    document.body.classList.toggle('lp-open', open);
+  }
+  $('#btn-layers').addEventListener('click', (e) => { e.stopPropagation(); setLayersPanel($('#layers-panel').hidden); });
+  ['lp-close', 'lp-done'].forEach((id) => $('#' + id).addEventListener('click', () => setLayersPanel(false)));
+  $('#lp-backdrop').addEventListener('pointerdown', (e) => { e.preventDefault(); setLayersPanel(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#layers-panel').hidden) setLayersPanel(false); });
   $$('#base-seg button').forEach((b) => {
     b.setAttribute('aria-pressed', b.dataset.base === base);
     b.addEventListener('click', () => setBase(b.dataset.base));
@@ -166,25 +174,29 @@
     row.append(cb, document.createTextNode(' ' + o.name + (o.minZoom ? ' (phóng to để xem)' : '')));
     cb.addEventListener('change', () => { o.on = cb.checked; store.set('qh_off_' + o.id, o.on); syncOfficial(); });
     $('#ov-official').append(row);
-    if (o.legend) { o.legendBox = el('div', 'oflegend'); o.legendBox.hidden = true; $('#ov-official').append(o.legendBox); }
+    if (o.legend) {
+      // chú giải thu gọn, chỉ tải khi mở ra
+      const det = el('details', 'lgd'); det.append(el('summary', null, 'Chú giải màu quy hoạch'));
+      o.legendBox = el('div', 'oflegend'); det.append(o.legendBox); $('#ov-official').append(det);
+      det.addEventListener('toggle', () => { if (det.open) loadLegend(o); });
+    }
   });
   const okImg = (ct, data) => /^image\/(png|jpeg|gif)$/.test(ct || '') && /^[A-Za-z0-9+/=]+$/.test(data || '');
   async function loadLegend(o) {
     if (o.legendLoaded || !o.legendBox) return;
-    o.legendLoaded = true; o.legendBox.hidden = false; o.legendBox.textContent = 'Đang tải chú giải…';
+    o.legendLoaded = true; o.legendBox.textContent = 'Đang tải chú giải…';
     try {
       const j = await gis(svcPath(o.service) + '/legend', {});
-      o.legendBox.replaceChildren(el('div', 'lp-h', 'Chú giải quy hoạch'));
+      o.legendBox.replaceChildren();
       let n = 0;
       (j.layers || []).forEach((ly) => (ly.legend || []).forEach((it) => {
         if (n++ >= 60 || !okImg(it.contentType, it.imageData)) return;
         const r = el('div', 'lg-row'); const img = el('img'); img.alt = ''; img.src = `data:${it.contentType};base64,${it.imageData}`;
         r.append(img, el('span', null, it.label || ly.layerName || '')); o.legendBox.append(r);
       }));
-      if (!n) o.legendBox.hidden = true;
+      if (!n) o.legendBox.textContent = 'Máy chủ không có chú giải.';
     } catch (_) { o.legendBox.textContent = 'Không tải được chú giải.'; o.legendLoaded = false; }
   }
-  $('#btn-layers').addEventListener('click', () => officials.forEach(loadLegend));
 
   // ---------- bottom sheet ----------
   const sheet = $('#sheet');
