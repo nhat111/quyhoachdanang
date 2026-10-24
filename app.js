@@ -34,7 +34,8 @@
     sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Ảnh © Esri' }),
     gray: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: '© Esri' }),
   };
-  let base = bases[store.get('qh_base', 'street')] ? store.get('qh_base', 'street') : 'street';
+  // khoá lưu mới (v2) để bỏ lựa chọn OSM cũ đã lưu trên máy người dùng
+  let base = bases[store.get('qh_base2', 'street')] ? store.get('qh_base2', 'street') : 'street';
   bases[base].addTo(map);
   // nền bị chặn (nhiều tile lỗi, không tile nào tải được) → tự chuyển sang nền kế tiếp
   const FALLBACK = { osm: 'street', street: 'gray', gray: 'sat', sat: 'street' };
@@ -43,7 +44,7 @@
     layer.on('tileload', () => { ok++; });
     layer.on('tileerror', () => {
       bad++;
-      if (k !== base || ok > 0 || bad < 6) return;
+      if (k !== base || bad < 6 || bad < ok * 2) return;
       const next = FALLBACK[k];
       bad = -1000; // chỉ chuyển một lần cho mỗi nền
       setBase(next, true);
@@ -52,7 +53,7 @@
   function setBase(k, auto) {
     if (!bases[k] || k === base) return;
     map.removeLayer(bases[base]); base = k; bases[base].addTo(map); bases[base].bringToBack();
-    store.set('qh_base', base);
+    store.set('qh_base2', base);
     document.querySelectorAll('#base-seg button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.base === base));
     if (auto) toast('Bản đồ nền không tải được, đã chuyển sang nền khác');
   }
@@ -79,12 +80,32 @@
   // ---------- dữ liệu chính thức của Sở Xây dựng (ArcGIS REST) ----------
   const OFF = CFG.official || { layers: [] };
   const svcPath = (svc) => `${OFF.base}/${svc}/MapServer`;
+  // Gọi thẳng máy chủ Sở bằng JSONP (ArcGIS hỗ trợ callback=), vì máy chủ chặn CORS và có thể chặn IP nước ngoài của proxy.
+  let jsonpN = 0;
+  function jsonp(url, params, timeout) {
+    return new Promise((resolve, reject) => {
+      const cb = `__qhjp${++jsonpN}_${Date.now().toString(36)}`;
+      const sc = document.createElement('script');
+      const qs = new URLSearchParams(Object.assign({}, params, { f: 'json', callback: cb }));
+      const done = () => { clearTimeout(tm); window[cb] = () => {}; sc.remove(); };
+      const tm = setTimeout(() => { done(); reject(new Error('timeout')); }, timeout || 15000);
+      window[cb] = (data) => { done(); resolve(data); };
+      sc.onerror = () => { done(); reject(new Error('jsonp')); };
+      sc.src = `${url}?${qs}`;
+      document.head.appendChild(sc);
+    });
+  }
   async function gis(path, params) {
-    const qs = new URLSearchParams(params || {});
-    const r = await fetch(`/api/gis?path=${encodeURIComponent(path)}&${qs}`);
-    if (!r.ok) throw new Error('gis ' + r.status);
-    const j = await r.json();
-    if (j.error) throw new Error('gis ' + (j.error.message || j.error));
+    let j;
+    try { j = await jsonp(OFF.host + path, params); }
+    catch (e) {
+      // dự phòng qua proxy /api/gis
+      const qs = new URLSearchParams(params || {});
+      const r = await fetch(`/api/gis?path=${encodeURIComponent(path)}&${qs}`);
+      if (!r.ok) throw new Error('gis ' + r.status);
+      j = await r.json();
+    }
+    if (!j || j.error) throw new Error('gis ' + ((j && j.error && j.error.message) || 'empty'));
     return j;
   }
   map.createPane('officialPane'); map.getPane('officialPane').style.zIndex = 380; // dưới lớp vector của app
