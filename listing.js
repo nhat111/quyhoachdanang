@@ -181,7 +181,7 @@
     if (det.length) parts.push(det.join('\n'));
 
     if (d.price) parts.push(`${emojiOk ? '💰 ' : ''}${d.mode === 'thue' ? 'Giá thuê' : 'Giá'}: ${d.price}`);
-    const who = d.name ? `${d.phone} (${d.name})` : d.phone;
+    const who = d.name ? `${d.name} – ${d.phone}` : d.phone;
     parts.push(`${emojiOk ? '☎️ ' : ''}Liên hệ: ${who}`);
     if (d.link) parts.push(`Xem vị trí và quy hoạch: ${d.link}`);
     const close = zalo ? '' : pick(CLOSE[tone], v)(d);

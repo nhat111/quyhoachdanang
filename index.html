@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241325">
+<link rel="stylesheet" href="app.css?v=202610241326">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -148,8 +148,14 @@
           <div class="chips" id="pf-type" role="radiogroup" aria-label="Loại bất động sản"></div>
           <label for="pf-area"><span>Địa chỉ hoặc khu vực <b class="req">*</b></span><input class="inp" id="pf-area" maxlength="120" placeholder="Kiệt 120 Nguyễn Văn Thoại, Sơn Trà, Đà Nẵng"></label>
           <div class="err" id="pf-area-err" hidden></div>
-          <label for="pf-phone"><span>Số điện thoại <b class="req">*</b></span><input class="inp" id="pf-phone" maxlength="20" inputmode="tel" placeholder="0905 123 456"></label>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>Thông tin liên hệ</legend>
+          <label for="pf-name">Tên người liên hệ <span class="opt">(không bắt buộc)</span><input class="inp" id="pf-name" maxlength="50" autocomplete="name" placeholder="Anh Nam, Chị Lan, Nam môi giới"></label>
+          <label for="pf-phone"><span>Số điện thoại / Zalo <b class="req">*</b></span><input class="inp" id="pf-phone" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="0905 123 456"></label>
           <div class="err" id="pf-phone-err" hidden></div>
+          <p class="hint">Tên và số được nhớ trên máy này cho lần tạo tin sau.</p>
         </fieldset>
 
         <fieldset class="fs">
@@ -193,7 +199,6 @@
           <label for="pf-amenities">Tiện ích gần đó<textarea class="inp" id="pf-amenities" maxlength="300" rows="2" placeholder="Gần chợ, trường học, cách biển (tự nhập, cách nhau bằng dấu phẩy)"></textarea></label>
           <label for="pf-highlights">Điểm nổi bật<textarea class="inp" id="pf-highlights" maxlength="300" rows="2" placeholder="Nhà mới, khu dân cư yên tĩnh (chỉ ghi điều bạn chắc chắn)"></textarea></label>
           <label for="pf-note">Ghi chú khác<textarea class="inp" id="pf-note" maxlength="300" rows="2"></textarea></label>
-          <label for="pf-name">Tên người liên hệ<input class="inp" id="pf-name" maxlength="50" placeholder="Anh Nam"></label>
         </details>
 
         <div class="fs suggest-box" id="pf-sug" hidden>
@@ -302,9 +307,9 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241325"></script>
-<script src="listing.js?v=202610241325"></script>
-<script src="data.js?v=202610241325"></script>
-<script src="app.js?v=202610241325"></script>
+<script src="config.js?v=202610241326"></script>
+<script src="listing.js?v=202610241326"></script>
+<script src="data.js?v=202610241326"></script>
+<script src="app.js?v=202610241326"></script>
 </body>
 </html>

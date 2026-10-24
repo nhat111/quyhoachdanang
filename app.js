@@ -805,6 +805,7 @@
 
   // ---------- tạo tin rao (listing.js) ----------
   const LG = window.QHListing;
+  const s2 = (v) => String(v == null ? '' : v).trim().slice(0, 50);
   const PF_FIELDS = ['area', 'phone', 'main', 'road', 'price', 'landArea', 'useArea', 'floors', 'front', 'depth', 'beds', 'wcs', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'];
   const PF_DEFAULT = { mode: 'ban', type: 'nha', roadKind: '', tone: 'friendly', channel: 'fb' };
   const pf = Object.assign({ variant: 0, sug: [] }, PF_DEFAULT);
@@ -877,7 +878,7 @@
     });
     fillStatus(d.main || '');
     syncTypeFields();
-    if (['useArea', 'front', 'depth', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'].some((k) => d[k])) $('#pf-more').open = true;
+    if (['useArea', 'front', 'depth', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note'].some((k) => d[k])) $('#pf-more').open = true;
     syncRadios();
   }
   const hasData = () => PF_FIELDS.some((k) => f$(k).value.trim());
@@ -912,7 +913,7 @@
     setTimeout(() => {
       pf.variant = 0; renderOut(LG.generate(d, 0));
       btn.disabled = false; btn.textContent = 'Tạo tin rao';
-      if (d.name) broker.name = broker.name || d.name;
+      broker.name = s2(d.name); broker.phone = s2(d.phone); store.set('qh_broker', broker);
     }, 120);
   });
   $('#pf-again').addEventListener('click', () => {
@@ -926,7 +927,7 @@
     const b = $('#pf-reset');
     if (hasData() && !b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Bấm lần nữa để xoá hết'; setTimeout(() => { delete b.dataset.confirm; b.textContent = 'Làm mới biểu mẫu'; }, 3500); return; }
     delete b.dataset.confirm; b.textContent = 'Làm mới biểu mẫu';
-    writeForm({}); pf.sug.forEach((x) => { x.cb.checked = false; });
+    writeForm({ name: f$('name').value, phone: f$('phone').value }); pf.sug.forEach((x) => { x.cb.checked = false; }); // giữ thông tin liên hệ
     $('#pf-out').hidden = true; $('#pf-sample-note').hidden = true; $('#pf-more').open = false;
     ['area', 'phone'].forEach((k) => showErr(k, ''));
     try { localStorage.removeItem('qh_post_draft'); } catch (_) {}
@@ -971,7 +972,7 @@
     }
   }
   $$('#tabs button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.tab === 'post' && current) setSuggestions(findSaved()); }));
-  (function restoreDraft() { const d = store.get('qh_post_draft', null); writeForm(d || {}); })();
+  (function restoreDraft() { const d = store.get('qh_post_draft', null) || {}; if (!d.name) d.name = broker.name; if (!d.phone) d.phone = broker.phone; writeForm(d); })();
   $('#pf-back').addEventListener('click', () => { showTab('place'); setSheet(current ? 'half' : 'peek'); });
 
   // ---------- trang của khách (?s=...) ----------
