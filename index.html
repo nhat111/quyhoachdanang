@@ -72,7 +72,41 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
   .head p,.src{display:none}
 }
 .mapwrap{position:relative;min-height:0;height:100%}
+[hidden]{display:none!important}
 .lbl.off{display:none}
+/* Tra cứu + trang gửi khách */
+.lk-row{display:flex;gap:8px}
+.inp{font:inherit;font-size:14px;width:100%;min-width:0;border:1px solid var(--line);border-radius:6px;padding:9px 10px;background:var(--bg);color:var(--fg)}
+textarea.inp{resize:vertical;min-height:60px}
+.btn{font:inherit;font-size:13.5px;font-weight:600;border:0;border-radius:6px;padding:9px 14px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;text-align:center}
+.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.hint{color:var(--muted);font-size:12.5px;margin:6px 0 0}
+#lk-msg{color:var(--t1);font-size:13px;margin:6px 0 0;min-height:1em}
+.zonecard{border-left:4px solid var(--line);background:color-mix(in srgb,var(--fg) 4%,transparent);border-radius:6px;padding:10px 12px;margin-top:12px}
+.zonecard .zt{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.zonecard .zn{font-weight:700;font-size:15px;line-height:1.3;margin-top:2px}
+.zonecard .zh{color:var(--muted);font-size:13px}
+.zonecard ul{margin:6px 0 0;padding-left:1rem;font-size:13.5px}
+.zonecard .zr{font-size:13px;color:var(--muted);margin-top:6px}
+.subh{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.dist{display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:13.5px}
+.dist b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums;text-align:right}
+.coord{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:10px;user-select:all}
+.card2{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:16px;display:grid;gap:8px}
+.card2 h3{margin:0;font-size:14px}
+.card2 label{font-size:12.5px;color:var(--muted);display:grid;gap:3px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lotpin{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e0245e;border:3px solid #fff;box-shadow:0 1px 4px #0006}
+#shareview{padding:16px 18px 24px;overflow:auto;flex:1;min-height:0}
+#shareview h2{margin:0;font-size:1.25rem;line-height:1.25;text-wrap:balance}
+#sv-price{font-size:1.15rem;font-weight:700;color:var(--t1);margin-top:4px}
+#sv-note{white-space:pre-wrap;margin:8px 0 0;font-size:14px}
+.broker{display:grid;gap:8px;border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:16px}
+.broker .bn{font-weight:700}
+.broker .bp{font-family:var(--mono);user-select:all}
+.broker .acts{display:flex;gap:8px;flex-wrap:wrap}
+.disc{font-size:12px;color:var(--muted);margin-top:14px}
+body.share .tabs,body.share .pane,body.share .head p,body.share .src{display:none!important}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 </head>
@@ -86,10 +120,39 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
       <button class="toggle" id="toggle">Thu gọn</button>
     </div>
     <div class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-p="zones">Khu vực</button>
-      <button class="tab" role="tab" aria-selected="false" data-p="facts">Tóm tắt quy hoạch</button>
+      <button class="tab" role="tab" aria-selected="true" data-p="lookup">Tra cứu</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="zones">Khu vực</button>
+      <button class="tab" role="tab" aria-selected="false" data-p="facts">Tóm tắt</button>
     </div>
-    <div class="pane" id="zones">
+    <div class="pane" id="lookup">
+      <form id="lk-form" class="lk-row">
+        <input class="inp" id="lk-input" placeholder="16.0544, 108.2022 · link Google Maps · VN2000" autocomplete="off">
+        <button class="btn" type="submit">Tra</button>
+      </form>
+      <p class="hint">Hoặc chạm vào bản đồ. Toạ độ VN2000 trên sổ đỏ nhập dạng: X 1775432 Y 554210.</p>
+      <button class="btn ghost" id="lk-gps" type="button" style="margin-top:8px">Dùng vị trí hiện tại của tôi</button>
+      <p id="lk-msg" aria-live="polite"></p>
+      <div id="lk-result"></div>
+      <div id="lk-share" class="card2" hidden>
+        <h3>Tạo trang gửi khách</h3>
+        <form id="sh-form" style="display:grid;gap:8px">
+          <label>Tiêu đề lô<input class="inp" id="sh-title" maxlength="80" placeholder="Lô 100 m² đường 7,5 m, Hòa Xuân"></label>
+          <label>Giá<input class="inp" id="sh-price" maxlength="40" placeholder="3,2 tỷ"></label>
+          <label>Ghi chú cho khách<textarea class="inp" id="sh-note" maxlength="300" placeholder="Sổ hồng riêng, hướng Đông Nam, gần trường học"></textarea></label>
+          <div class="grid2">
+            <label>Tên môi giới<input class="inp" id="sh-name" maxlength="50"></label>
+            <label>Số điện thoại / Zalo<input class="inp" id="sh-phone" maxlength="15" inputmode="tel"></label>
+          </div>
+          <button class="btn" type="submit">Tạo link</button>
+        </form>
+        <div id="lk-link" hidden style="display:grid;gap:8px">
+          <input class="inp" id="sh-url" readonly>
+          <div class="lk-row"><button class="btn" id="sh-copy" type="button">Copy link</button><a class="btn ghost" id="sh-open" target="_blank" rel="noopener">Xem thử</a></div>
+          <p class="hint">Gửi link qua Zalo cho khách. Thông tin nằm ngay trong link, không lưu trên máy chủ.</p>
+        </div>
+      </div>
+    </div>
+    <div class="pane" id="zones" hidden>
       <div class="chips" id="chips"></div>
       <div id="list"></div>
     </div>
@@ -120,11 +183,26 @@ aside{background:var(--panel);border-right:1px solid var(--line);display:flex;fl
         <div><h3>Lưu ý</h3><p>Mức tiềm năng là nhận định từ văn bản quy hoạch, không phải tư vấn đầu tư. Ranh giới vẽ gần đúng; luôn tra quy hoạch sử dụng đất của từng thửa trước khi giao dịch.</p></div>
       </div>
     </div>
+    <div id="shareview" hidden>
+      <h2 id="sv-title"></h2>
+      <div id="sv-price"></div>
+      <p id="sv-note"></p>
+      <div id="sv-info"></div>
+      <div class="broker" id="sv-broker">
+        <div class="bn" id="sv-bname"></div>
+        <div class="bp" id="sv-bphone"></div>
+        <div class="acts"><a class="btn" id="sv-call">Gọi</a><a class="btn ghost" id="sv-zalo" target="_blank" rel="noopener">Zalo</a><a class="btn ghost" id="sv-gmaps" target="_blank" rel="noopener">Chỉ đường</a></div>
+      </div>
+      <p class="disc">Vùng quy hoạch trên trang này được vẽ minh họa từ Quyết định 2016/QĐ-TTg, chưa phải bản đồ quy hoạch chính thức. Hãy kiểm tra quy hoạch sử dụng đất của thửa đất tại cơ quan có thẩm quyền trước khi giao dịch.</p>
+      <a class="btn ghost" href="./" style="margin-top:6px">Xem toàn bộ bản đồ quy hoạch</a>
+    </div>
   </aside>
   <div class="mapwrap"><div id="map"></div></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
 <script>
 const TIER={
   "1":{c:"#c0264f",n:"Động lực trực tiếp (2026–2035)"},
@@ -269,7 +347,7 @@ function select(id,fly){
 // tabs
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===t));
-  document.getElementById('zones').hidden=t.dataset.p!=='zones';document.getElementById('facts').hidden=t.dataset.p!=='facts';});
+  ['lookup','zones','facts'].forEach(id=>document.getElementById(id).hidden=t.dataset.p!==id);});
 // mobile toggle
 const tg=document.getElementById('toggle'),side=document.getElementById('side');
 tg.onclick=()=>{side.classList.toggle('min');tg.textContent=side.classList.contains('min')?'Mở rộng':'Thu gọn';setTimeout(()=>map.invalidateSize(),300)};
@@ -284,5 +362,6 @@ function fit(){map.invalidateSize();
 window.addEventListener('load',fit);
 let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>map.invalidateSize(),150)});
 </script>
+<script src="lookup.js"></script>
 </body>
 </html>
