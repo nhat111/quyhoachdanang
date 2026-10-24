@@ -59,7 +59,7 @@
   }
   L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
-  const zoneLayer = L.layerGroup(), reclaimLayer = L.layerGroup().addTo(map),
+  const zoneLayer = L.layerGroup(), reclaimLayer = L.layerGroup(),
         infraLayer = L.layerGroup().addTo(map), poiLayer = L.layerGroup().addTo(map);
   const polys = {}, pins = {};
   Z.forEach((z) => {
@@ -135,14 +135,27 @@
     b.addEventListener('click', () => setBase(b.dataset.base));
   });
   // vùng đánh số: mặc định ẩn (đã có lớp quy hoạch của Sở), bật bằng nút trên bản đồ hoặc bảng lớp
+  function syncIllusBtn() { $('#btn-zones').setAttribute('aria-pressed', map.hasLayer(zoneLayer) || map.hasLayer(reclaimLayer)); }
   function setZones(on) {
     if (on) zoneLayer.addTo(map); else map.removeLayer(zoneLayer);
-    $('#ov-zones').checked = on; $('#btn-zones').setAttribute('aria-pressed', on); store.set('qh_zones', on);
+    $('#ov-zones').checked = on; store.set('qh_zones', on); syncIllusBtn();
   }
   setZones(store.get('qh_zones', false));
-  $('#btn-zones').addEventListener('click', () => { const on = !map.hasLayer(zoneLayer); setZones(on); toast(on ? 'Đã hiện các vùng đánh số' : 'Đã ẩn các vùng đánh số'); });
+  // khu lấn biển cũng là vẽ minh hoạ (quyết định chưa công bố ranh giới): mặc định ẩn
+  function setReclaim(on) {
+    if (on) reclaimLayer.addTo(map); else map.removeLayer(reclaimLayer);
+    $('#ov-reclaim').checked = on; store.set('qh_reclaim', on); syncIllusBtn();
+  }
+  setReclaim(store.get('qh_reclaim', false));
+  $('#ov-reclaim').addEventListener('change', (e) => setReclaim(e.target.checked));
+  // nút trên bản đồ bật/tắt cả hai lớp minh hoạ
+  $('#btn-zones').addEventListener('click', () => {
+    const on = !(map.hasLayer(zoneLayer) || map.hasLayer(reclaimLayer));
+    setZones(on); setReclaim(on);
+    toast(on ? 'Đã hiện vùng đánh số và khu lấn biển (minh hoạ)' : 'Đã ẩn các lớp minh hoạ');
+  });
   $('#ov-zones').addEventListener('change', (e) => setZones(e.target.checked));
-  const toggles = { 'ov-reclaim': reclaimLayer, 'ov-infra': infraLayer, 'ov-poi': poiLayer };
+  const toggles = { 'ov-infra': infraLayer, 'ov-poi': poiLayer };
   Object.entries(toggles).forEach(([id, layer]) => $('#' + id).addEventListener('change', (e) => { if (e.target.checked) layer.addTo(map); else map.removeLayer(layer); }));
   // hàng bật/tắt cho từng lớp của Sở + chú giải tải khi mở bảng lớp
   officials.forEach((o) => {
