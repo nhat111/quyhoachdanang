@@ -17,6 +17,7 @@ Site tĩnh, không cần build: mở `index.html` qua một static server (`npx 
 ## Cấu trúc
 - `index.html`, `app.css`, `app.js` — ứng dụng (Leaflet 1.9.4, esri-leaflet 3.0.12, Turf 6.5.0, proj4 2.9.2 qua CDN)
 - `listing.js` — bộ tạo tin rao (hàm thuần, chạy được trong Node để test: `node -e "console.log(require('./listing.js').generate(require('./listing.js').SAMPLE).text)"`)
+- `wards.js` — bảng mã phường/xã (trước sáp nhập 7/2025) → tên, cho Đà Nẵng và Quảng Nam cũ (nguồn: daohoangson/dvhcvn)
 - `data.js` — 14 vùng (vẽ minh hoạ), khu lấn biển, hạ tầng, mốc khoảng cách
 - `config.js` — URL dịch vụ GIS chính thức, trường bị ẩn
 - `api/s.js` + `vercel.json` — `/l?d=...` trả thẻ Open Graph rồi chuyển sang `/?s=...`

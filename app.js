@@ -375,6 +375,9 @@
     if (!F.to || !F.thua) throw new Error('nofields');
     parcelMeta = F; return F;
   }
+  // mã phường/xã 5 chữ số (dữ liệu địa chính dùng mã trước sáp nhập 7/2025) → tên
+  const WARDS = window.QH_WARDS || {};
+  const wardName = (v) => { const k = String(v == null ? '' : v).trim(); return WARDS[k] || ''; };
   const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
   async function queryParcel(to, thua, xa) {
     const F = await parcelInfo();
@@ -382,9 +385,14 @@
     const where = `${F.to.name}=${val(F.to, to)} AND ${F.thua.name}=${val(F.thua, thua)}`;
     const j = await gis(`${svcPath(OFF.parcelService)}/${F.layer}/query`, { where, outFields: '*', returnGeometry: 'true', outSR: '4326' });
     let feats = (j.features || []).map((f) => ({ type: 'Feature', properties: f.attributes || {}, geometry: f.geometry && f.geometry.rings ? { type: 'Polygon', coordinates: f.geometry.rings } : null })).filter((f) => f.geometry);
-    const k = fold(xa).replace(/^(p|x|phuong|xa)\.?\s+/, '');
-    if (k) { const hit = feats.filter((f) => Object.values(f.properties).some((v) => typeof v === 'string' && fold(v).includes(k))); if (hit.length) feats = hit; }
-    return feats.slice(0, 20);
+    // lọc theo tên phường/xã người dùng gõ: so với các trường chữ và tên phường đổi từ mã
+    const k = fold(xa).toLowerCase().replace(/^(p|x|phuong|xa)\.?\s+/, '');
+    if (k) {
+      const hit = feats.filter((f) => Object.values(f.properties).some((v) => v != null && (fold(v).toLowerCase().includes(k) || fold(wardName(v)).toLowerCase().includes(k))));
+      if (hit.length) feats = hit; else feats.noMatch = true;
+    }
+    const out = feats.slice(0, 20); out.noMatch = !!feats.noMatch;
+    return out;
   }
 
   // ---------- ghim ----------
@@ -461,8 +469,9 @@
   q.addEventListener('input', () => { $('#btn-clear').hidden = !q.value; if (!q.value) sug.hidden = true; });
   $('#btn-clear').addEventListener('click', () => { q.value = ''; $('#btn-clear').hidden = true; sug.hidden = true; q.focus(); });
   function suggestMsg(text) { sug.replaceChildren(el('div', 'msg', text)); sug.hidden = false; }
-  function suggestList(items, onPick) {
+  function suggestList(items, onPick, header) {
     sug.replaceChildren();
+    if (header) sug.append(el('div', 'msg', header));
     items.forEach((it) => { const b = el('button'); b.type = 'button'; b.append(el('b', null, it.title), el('small', null, it.sub || '')); b.addEventListener('click', () => { sug.hidden = true; onPick(it); }); sug.append(b); });
     sug.hidden = false;
   }
@@ -486,10 +495,21 @@
           const c = turf.pointOnFeature(feat).geometry.coordinates;
           const pr = feat.properties || {};
           const bits = [pr[f.dientich] && `Diện tích ${fmtNum(+pr[f.dientich], 1)} m²`, pr[f.loaidat] && `Loại đất ${pr[f.loaidat]}`].filter(Boolean).join(' · ');
-          lookup(c[1], c[0], { zoom: 18, note: `Tờ ${r.to}, thửa ${r.thua}${pr[f.xa] ? ', ' + pr[f.xa] : ''}${bits ? ' · ' + bits : ''}` });
+          const wn = placeOf(pr);
+          lookup(c[1], c[0], { zoom: 18, addr: wn || undefined, note: `Tờ ${r.to}, thửa ${r.thua}${wn ? ', ' + wn : ''}${bits ? ' · ' + bits : ''}` });
         };
+        // tên phường: trường mã xã đổi ra tên; không có thì thử mọi trường có giá trị là mã
+        const placeOf = (pr) => wardName(pr[f.xa]) || Object.values(pr).map(wardName).find(Boolean) || (pr[f.xa] && !/^\d+$/.test(String(pr[f.xa])) ? String(pr[f.xa]) : '');
         if (feats.length === 1) { q.blur(); return pick(feats[0]); }
-        suggestList(feats.map((ft) => ({ title: `Tờ ${r.to} thửa ${r.thua}`, sub: (ft.properties && ft.properties[f.xa]) || '', ft })), (it) => pick(it.ft));
+        const items = feats.map((ft) => {
+          const pr = ft.properties || {}, wn = placeOf(pr);
+          const extra = [pr[f.dientich] && `${fmtNum(+pr[f.dientich], 1)} m²`, pr[f.loaidat]].filter(Boolean).join(' · ');
+          return { title: wn || `Mã xã ${pr[f.xa] || '?'} (ngoài Đà Nẵng hoặc không xác định)`, sub: `Tờ ${r.to} thửa ${r.thua}${extra ? ' · ' + extra : ''}`, ft, known: !!wn };
+        }).sort((a, b) => (b.known - a.known) || a.title.localeCompare(b.title, 'vi'));
+        const head = feats.noMatch
+          ? `Không có thửa nào ở "${r.xa}". Có ${items.length} thửa cùng số ở các phường/xã dưới đây:`
+          : r.xa ? `${items.length} thửa khớp:` : `Có ${items.length} thửa cùng số tờ ${r.to} thửa ${r.thua} (mỗi phường/xã đánh số riêng). Chọn đúng phường, hoặc gõ thêm tên, ví dụ: tờ ${r.to} thửa ${r.thua} Hòa Xuân`;
+        suggestList(items, (it) => pick(it.ft), head);
       } catch (e) { suggestMsg(/nofields|nolayer/.test(e.message) ? 'Chưa nhận diện được cấu trúc dữ liệu địa chính. Tạm thời hãy nhập toạ độ VN2000 trên sổ đỏ.' : 'Không kết nối được dữ liệu địa chính của Sở. Thử lại sau.'); }
       return;
     }
