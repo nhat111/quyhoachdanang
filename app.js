@@ -287,18 +287,59 @@
     const parts = [a.house_number && a.road ? `${a.house_number} ${a.road}` : a.road, a.quarter || a.suburb || a.village || a.neighbourhood, a.city_district || a.town || a.county, a.city || a.state];
     return parts.filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(', ') || display || '';
   };
+  // Tìm địa chỉ: Esri World Geocoder trước (cùng nguồn bản đồ nền, gọi được trên mạng chặn OSM), rồi Nominatim, rồi Photon.
+  const ESRI_GC = 'https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer';
+  const DN_EXTENT = '107.1,14.8,109.2,16.6';
+  const withTimeout = (ms) => { const c = new AbortController(); setTimeout(() => c.abort(), ms); return c.signal; };
+  async function getJSON(url) { const r = await fetch(url, { signal: withTimeout(9000) }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+  const cleanEsri = (t) => String(t || '').replace(/,?\s*(Việt Nam|Vietnam|VNM)$/i, '').trim();
+
   async function reverse(lat, lng) {
     try {
-      const r = await fetch(`${NOMI}/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`);
-      if (!r.ok) return '';
-      const j = await r.json(); return shortAddr(j.address, j.display_name);
+      const j = await getJSON(`${ESRI_GC}/reverseGeocode?location=${lng},${lat}&langCode=VI&f=json`);
+      const a = j.address || {};
+      const t = cleanEsri(a.LongLabel || a.Match_addr || [a.Address, a.Neighborhood, a.District, a.City].filter(Boolean).join(', '));
+      if (t) return t;
+    } catch (_) {}
+    try {
+      const j = await getJSON(`${NOMI}/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=vi`);
+      return shortAddr(j.address, j.display_name);
     } catch (_) { return ''; }
   }
+
+  const inArea = (x) => x.lat > 14.8 && x.lat < 16.6 && x.lng > 107.1 && x.lng < 109.2;
+  async function geoEsri(q) {
+    const u = `${ESRI_GC}/findAddressCandidates?SingleLine=${encodeURIComponent(q)}&countryCode=VNM&searchExtent=${DN_EXTENT}&location=108.2,16.05&maxLocations=8&langCode=VI&outFields=PlaceName,Addr_type,Score&f=json`;
+    const j = await getJSON(u);
+    return (j.candidates || []).filter((c) => c.score >= 60).map((c) => {
+      const addr = cleanEsri(c.address);
+      const name = (c.attributes && c.attributes.PlaceName) || addr.split(',')[0];
+      return { lat: c.location.y, lng: c.location.x, title: name, sub: addr };
+    });
+  }
+  async function geoNominatim(qq) {
+    const j = await getJSON(`${NOMI}/search?format=jsonv2&q=${encodeURIComponent(qq)}&countrycodes=vn&viewbox=107.1,16.6,109.2,14.8&bounded=1&limit=6&addressdetails=1&accept-language=vi`);
+    return j.map((x) => ({ lat: +x.lat, lng: +x.lon, title: x.name || shortAddr(x.address, x.display_name).split(',')[0], sub: shortAddr(x.address, x.display_name) }));
+  }
+  async function geoPhoton(qq) {
+    const j = await getJSON(`https://photon.komoot.io/api/?q=${encodeURIComponent(qq)}&lat=16.05&lon=108.2&limit=6&bbox=${DN_EXTENT}`);
+    return (j.features || []).map((f) => { const p = f.properties || {}; return { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0], title: p.name || [p.housenumber, p.street].filter(Boolean).join(' '), sub: [p.housenumber && p.street ? `${p.housenumber} ${p.street}` : p.street, p.district, p.city].filter(Boolean).join(', ') }; });
+  }
+  // trả về { results, reached }: reached = có ít nhất một dịch vụ trả lời (để phân biệt "không tìm thấy" và "không kết nối được")
   async function geocode(q) {
     const qq = /đà nẵng|da nang|quảng nam|hội an|tam kỳ/i.test(q) ? q : q + ', Đà Nẵng';
-    const r = await fetch(`${NOMI}/search?format=jsonv2&q=${encodeURIComponent(qq)}&countrycodes=vn&viewbox=107.1,16.6,109.2,14.8&bounded=1&limit=6&addressdetails=1&accept-language=vi`);
-    if (!r.ok) throw new Error('search');
-    return (await r.json()).map((x) => ({ lat: +x.lat, lng: +x.lon, title: x.name || shortAddr(x.address, x.display_name).split(',')[0], sub: shortAddr(x.address, x.display_name) }));
+    let reached = false;
+    for (const fn of [() => geoEsri(qq), () => geoNominatim(qq), () => geoPhoton(qq)]) {
+      try {
+        const res = (await fn()).filter(inArea);
+        reached = true;
+        if (res.length) {
+          const seen = new Set();
+          return { results: res.filter((x) => { const k = x.lat.toFixed(4) + x.lng.toFixed(4); if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 6), reached };
+        }
+      } catch (_) {}
+    }
+    return { results: [], reached };
   }
 
   // ---------- lớp quy hoạch / thửa đất chính thức ----------
@@ -514,11 +555,10 @@
       return;
     }
     suggestMsg('Đang tìm địa chỉ…');
-    try {
-      const res = await geocode(r.q);
-      if (!res.length) return suggestMsg('Không tìm thấy địa chỉ. Thử tên đường kèm phường, ví dụ: Nguyễn Văn Linh, Thanh Khê');
-      suggestList(res, (it) => { q.blur(); lookup(it.lat, it.lng, { addr: it.sub || it.title, zoom: 17 }); });
-    } catch (_) { suggestMsg('Không tìm được địa chỉ lúc này. Hãy thử dán toạ độ.'); }
+    const { results, reached } = await geocode(r.q);
+    if (!reached) return suggestMsg('Không kết nối được dịch vụ tìm địa chỉ. Kiểm tra mạng, hoặc dán toạ độ / chạm vào bản đồ.');
+    if (!results.length) return suggestMsg('Không tìm thấy địa chỉ này. Số nhà trong kiệt thường chưa có trên bản đồ: thử tên đường kèm phường (ví dụ: Mân Quang 7, Sơn Trà), rồi chạm đúng vị trí trên bản đồ.');
+    suggestList(results, (it) => { q.blur(); lookup(it.lat, it.lng, { addr: it.sub || it.title, zoom: 18 }); }, 'Vị trí tìm theo địa chỉ là gần đúng, kiểm tra lại trên bản đồ:');
   }
   $('#search-form').addEventListener('submit', (e) => { e.preventDefault(); runSearch(q.value); });
   $$('.tip').forEach((t) => t.addEventListener('click', () => { q.value = t.dataset.q; $('#btn-clear').hidden = false; runSearch(t.dataset.q); }));
