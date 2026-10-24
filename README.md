@@ -21,6 +21,7 @@ Site tĩnh, không cần build: mở `index.html` qua một static server (`npx 
 - `config.js` — URL dịch vụ GIS chính thức, trường bị ẩn
 - `api/s.js` + `vercel.json` — `/l?d=...` trả thẻ Open Graph rồi chuyển sang `/?s=...`
 - `og.png` — ảnh xem trước 1200×630
+- `manifest.webmanifest`, `icon.svg`, `icons/` — PWA: thêm vào màn hình chính, mở như app riêng (không có service worker, vẫn cần mạng; giống ontaptieuhoc)
 
 ## Lưu ý
 Ranh giới 14 vùng là minh hoạ, không phải bản đồ quy hoạch chính thức. Không hiển thị thông tin chủ sử dụng đất. Kiểm tra điều khoản sử dụng dữ liệu của cơ quan quản lý trước khi kết nối lớp chính thức.
