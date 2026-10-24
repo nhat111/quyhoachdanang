@@ -8,22 +8,18 @@
 // 4. Bấm vào một thửa đất. Tìm request ".../MapServer/<số>/query" hoặc ".../identify",
 //    xem tab Response để biết tên trường số tờ, số thửa, mã xã.
 window.QH_CONFIG = {
-  // Lớp quy hoạch chính thức (ArcGIS MapServer). Ví dụ: 'https://.../arcgis/rest/services/QuyHoach/MapServer'
-  planning: {
-    // Lớp đang thử: dịch vụ SoNhaTest của Sở Xây dựng (bắt được từ thongtinquyhoachxaydung.danang.gov.vn).
-    // Đổi sang dịch vụ quy hoạch khi tìm được tên đúng trong /arcgis/rest/services/SoXayDung
-    type: 'wms',
-    url: 'https://thongtinquyhoachxaydung.danang.gov.vn/arcgis/services/SoXayDung/SoNhaTest/MapServer/WMSServer',
-    layers: '0',
-    identifyPath: '/arcgis/rest/services/SoXayDung/SoNhaTest/MapServer', // dùng cho tra thông tin tại điểm qua /api/gis
-    opacity: 0.8,
-    name: 'Dữ liệu Sở Xây dựng (thử nghiệm)',
+  // Dữ liệu ArcGIS 10.41 của Cổng thông tin quy hoạch xây dựng Đà Nẵng (Sở Xây dựng).
+  // Hiển thị: ảnh export tải thẳng từ máy chủ Sở. Tra cứu (identify/query/legend): qua proxy /api/gis.
+  official: {
+    host: 'https://thongtinquyhoachxaydung.danang.gov.vn',
+    base: '/arcgis/rest/services/SoXayDung',
+    layers: [
+      { id: 'qhdt', service: 'QuyHoachDoThi', name: 'Quy hoạch đô thị (Sở Xây dựng)', on: true, opacity: 0.7, identify: true, summary: true, legend: true },
+      { id: 'rgqhct', service: 'RanhGioiQHCT', name: 'Ranh giới đồ án quy hoạch chi tiết', on: false, opacity: 0.9, identify: true, maxShow: 1 },
+      { id: 'dc', service: 'DiaChinh', name: 'Thửa đất (địa chính)', on: false, opacity: 0.9, minZoom: 16, identify: true, maxShow: 1 },
+    ],
+    parcelService: 'DiaChinh', // dùng cho tra "tờ 12 thửa 345"; lớp và tên trường được tự dò
   },
-  // Lớp thửa đất để tra theo số tờ, số thửa. Ví dụ: 'https://.../MapServer/3'
-  parcel: {
-    url: '',
-    fields: { to: 'SOTO', thua: 'SOTHUA', xa: 'TENXA', dientich: 'DIENTICH', loaidat: 'LOAIDAT' },
-  },
-  // Không bao giờ hiển thị các trường có tên khớp mẫu này (thông tin cá nhân)
-  hiddenField: /chu|owner|cmnd|cccd|gcn|giaychung|diachi_?chu|sdt|phone|objectid|shape|globalid/i,
+  // Không bao giờ hiển thị các trường có tên khớp mẫu này (thông tin cá nhân, trường kỹ thuật)
+  hiddenField: /chusudung|chu_?sd|ten_?chu|owner|cmnd|cccd|gcn|giaychung|so_?seri|diachi_?chu|sdt|phone|objectid|shape|globalid|fid$/i,
 };

@@ -183,6 +183,14 @@ body.guest .fab-col{top:calc(var(--top) + 10px)}
 
 .toast{position:fixed;z-index:2000;left:50%;top:calc(var(--top) + 70px);transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;box-shadow:var(--shadow);max-width:calc(100vw - 32px);text-align:center}
 
+/* ---- dữ liệu Sở Xây dựng ---- */
+.ofsum{font-weight:700;font-size:15px;color:var(--fg);background:var(--brand-soft);border-radius:8px;padding:6px 10px;margin:0 0 8px}
+.ofl{font-size:12px;font-weight:600;color:var(--muted);margin:6px 0 2px}
+.official .kv+.ofl{border-top:1px solid var(--line);padding-top:6px}
+.oflegend{margin:4px 0 8px 27px;display:grid;gap:3px;font-size:12.5px;max-height:220px;overflow:auto}
+.lg-row{display:flex;gap:8px;align-items:center}
+.lg-row img{width:20px;height:16px;object-fit:contain;flex:none}
+
 /* ---- tiện ích xung quanh ---- */
 .nb-r{margin-bottom:8px}
 .nb-sum{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;font-size:13.5px;align-items:baseline;margin:2px 0 12px}

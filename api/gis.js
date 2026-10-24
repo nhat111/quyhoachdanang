@@ -1,7 +1,7 @@
 // Proxy chỉ-đọc tới máy chủ ArcGIS của Sở Xây dựng Đà Nẵng, để trình duyệt gọi được identify/query.
-// Chỉ cho phép đúng host và đường dẫn /arcgis/rest/services/..., chỉ GET.
+// Chỉ cho phép đúng host, thư mục SoXayDung, các thao tác đọc (metadata, legend, identify, query), chỉ GET.
 const HOST = 'thongtinquyhoachxaydung.danang.gov.vn';
-const PATH_OK = /^\/arcgis\/rest\/services\/[A-Za-z0-9_\/]+\/(MapServer|FeatureServer)(\/\d+)?\/(identify|query)$/;
+const PATH_OK = /^\/arcgis\/rest\/services\/SoXayDung\/[A-Za-z0-9_]+\/MapServer(\/legend|\/identify|\/\d+|\/\d+\/query)?$/;
 
 module.exports = async (req, res) => {
   const path = String((req.query && req.query.path) || '');

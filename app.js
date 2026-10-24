@@ -55,17 +55,33 @@
   function labels() { const on = map.getZoom() >= 12; $$('.lbl.poi').forEach((e) => e.classList.toggle('off', !on)); }
   map.on('zoomend', labels);
 
-  // lớp quy hoạch chính thức (ArcGIS), chỉ bật khi đã cấu hình
-  let planning = null;
-  const PL = CFG.planning || {};
-  if (PL.url && PL.type === 'wms') {
-    // ArcGIS WMS: ảnh tile không cần CORS
-    planning = L.tileLayer.wms(PL.url, { layers: PL.layers || '0', format: 'image/png', transparent: true, version: '1.3.0', uppercase: true,
-      opacity: PL.opacity || 0.7, maxZoom: 20, attribution: PL.attribution || 'Dữ liệu © Sở Xây dựng Đà Nẵng' }).addTo(map);
-  } else if (PL.url && L.esri) {
-    planning = L.esri.dynamicMapLayer({ url: PL.url, opacity: PL.opacity || 0.65, useCors: false, layers: PL.layers || undefined, f: 'image' }).addTo(map);
+  // ---------- dữ liệu chính thức của Sở Xây dựng (ArcGIS REST) ----------
+  const OFF = CFG.official || { layers: [] };
+  const svcPath = (svc) => `${OFF.base}/${svc}/MapServer`;
+  async function gis(path, params) {
+    const qs = new URLSearchParams(params || {});
+    const r = await fetch(`/api/gis?path=${encodeURIComponent(path)}&${qs}`);
+    if (!r.ok) throw new Error('gis ' + r.status);
+    const j = await r.json();
+    if (j.error) throw new Error('gis ' + (j.error.message || j.error));
+    return j;
   }
-  if (planning) { $('#ov-planning-row').hidden = false; $('#ov-planning-name').textContent = PL.name || 'Quy hoạch chính thức'; }
+  map.createPane('officialPane'); map.getPane('officialPane').style.zIndex = 380; // dưới lớp vector của app
+  const officials = (OFF.layers || []).map((d) => {
+    const layer = L.esri ? L.esri.dynamicMapLayer({ url: OFF.host + svcPath(d.service), opacity: d.opacity || 0.7, useCors: false, f: 'image',
+      pane: 'officialPane', attribution: 'Quy hoạch © Sở Xây dựng Đà Nẵng' }) : null;
+    return Object.assign({}, d, { layer, on: store.get('qh_off_' + d.id, !!d.on) });
+  });
+  function syncOfficial() {
+    officials.forEach((o) => {
+      if (!o.layer) return;
+      const want = o.on && map.getZoom() >= (o.minZoom || 0);
+      if (want && !map.hasLayer(o.layer)) o.layer.addTo(map); else if (!want && map.hasLayer(o.layer)) map.removeLayer(o.layer);
+    });
+    const qh = officials.find((o) => o.summary);
+    Object.values(polys).forEach((p) => p.setStyle({ fillOpacity: qh && qh.on ? 0.04 : 0.16 }));
+  }
+  map.on('zoomend', syncOfficial);
 
   // ---------- bảng lớp ----------
   $('#legend').innerHTML = Object.values(TIER).map((t) => `<div><i style="background:${t.c}"></i>${t.n}</div>`).join('') +
@@ -81,7 +97,32 @@
   });
   const toggles = { 'ov-zones': zoneLayer, 'ov-reclaim': reclaimLayer, 'ov-infra': infraLayer, 'ov-poi': poiLayer };
   Object.entries(toggles).forEach(([id, layer]) => $('#' + id).addEventListener('change', (e) => { if (e.target.checked) layer.addTo(map); else map.removeLayer(layer); }));
-  $('#ov-planning').addEventListener('change', (e) => { if (!planning) return; if (e.target.checked) planning.addTo(map); else map.removeLayer(planning); });
+  // hàng bật/tắt cho từng lớp của Sở + chú giải tải khi mở bảng lớp
+  officials.forEach((o) => {
+    const row = el('label', 'chk');
+    const cb = el('input'); cb.type = 'checkbox'; cb.id = 'ov-off-' + o.id; cb.checked = o.on;
+    row.append(cb, document.createTextNode(' ' + o.name + (o.minZoom ? ' (phóng to để xem)' : '')));
+    cb.addEventListener('change', () => { o.on = cb.checked; store.set('qh_off_' + o.id, o.on); syncOfficial(); });
+    $('#ov-official').append(row);
+    if (o.legend) { o.legendBox = el('div', 'oflegend'); o.legendBox.hidden = true; $('#ov-official').append(o.legendBox); }
+  });
+  const okImg = (ct, data) => /^image\/(png|jpeg|gif)$/.test(ct || '') && /^[A-Za-z0-9+/=]+$/.test(data || '');
+  async function loadLegend(o) {
+    if (o.legendLoaded || !o.legendBox) return;
+    o.legendLoaded = true; o.legendBox.hidden = false; o.legendBox.textContent = 'Đang tải chú giải…';
+    try {
+      const j = await gis(svcPath(o.service) + '/legend', {});
+      o.legendBox.replaceChildren(el('div', 'lp-h', 'Chú giải quy hoạch'));
+      let n = 0;
+      (j.layers || []).forEach((ly) => (ly.legend || []).forEach((it) => {
+        if (n++ >= 60 || !okImg(it.contentType, it.imageData)) return;
+        const r = el('div', 'lg-row'); const img = el('img'); img.alt = ''; img.src = `data:${it.contentType};base64,${it.imageData}`;
+        r.append(img, el('span', null, it.label || ly.layerName || '')); o.legendBox.append(r);
+      }));
+      if (!n) o.legendBox.hidden = true;
+    } catch (_) { o.legendBox.textContent = 'Không tải được chú giải.'; o.legendLoaded = false; }
+  }
+  $('#btn-layers').addEventListener('click', () => officials.forEach(loadLegend));
 
   // ---------- bottom sheet ----------
   const sheet = $('#sheet');
@@ -200,49 +241,85 @@
   function attrRows(props) {
     return Object.entries(props || {}).filter(([k, v]) => v !== null && v !== '' && v !== 'Null' && !(CFG.hiddenField && CFG.hiddenField.test(k))).slice(0, 14);
   }
-  function renderOfficial(box, title, feats) {
+  // tóm tắt loại đất / chức năng từ kết quả identify
+  function officialSummary(groups) {
+    if (!Array.isArray(groups)) return '';
+    for (const g of groups) {
+      if (!g.o.summary || !g.feats || !g.feats.length) continue;
+      const p = g.feats[0].properties || {};
+      const vals = Object.keys(p)
+        .filter((k) => /lo[aạ]i\s*đ[aấ]t|ch[ứu]c\s*n[aă]ng|m[ụu]c\s*đ[íi]ch|loai_?dat|chuc_?nang|muc_?dich|ten_?loai|k[ýy]\s*hi[ệe]u|ky_?hieu|kyhieu|ma_?loai/i.test(k) && !(CFG.hiddenField && CFG.hiddenField.test(k)))
+        .map((k) => String(p[k]).trim()).filter((v) => v && v !== 'Null' && v !== ' ');
+      if (vals.length) return [...new Set(vals)].slice(0, 2).join(' · ');
+    }
+    return '';
+  }
+  function renderOfficial(box, groups) {
     box.replaceChildren();
-    if (!feats) return;
-    const c = el('div', 'official'); c.append(el('h4', null, title));
-    if (!feats.length) { c.append(el('p', 'muted', 'Không có dữ liệu tại điểm này.')); box.append(c); return; }
-    feats.slice(0, 2).forEach((f) => {
-      const kv = el('div', 'kv');
-      attrRows(f.properties).forEach(([k, v]) => kv.append(el('span', null, niceKey(k)), el('span', null, String(v))));
-      c.append(kv);
+    if (groups === undefined || groups === null) return;
+    if (groups === 'loading') {
+      const c = el('div', 'official'); c.append(el('h4', null, 'Quy hoạch (Sở Xây dựng)'), el('p', 'muted', 'Đang tải dữ liệu quy hoạch…')); box.append(c); return;
+    }
+    const sum = officialSummary(groups);
+    groups.forEach(({ o, feats, err }) => {
+      const c = el('div', 'official'); c.append(el('h4', null, o.name));
+      if (o.summary && sum) c.append(el('div', 'ofsum', sum));
+      if (err) c.append(el('p', 'muted', 'Không kết nối được máy chủ của Sở. Thử lại sau.'));
+      else if (!feats.length) c.append(el('p', 'muted', 'Không có dữ liệu tại điểm này.'));
+      else feats.slice(0, o.maxShow || 2).forEach((f) => {
+        if (f.layer && feats.length > 1) c.append(el('div', 'ofl', f.layer));
+        const kv = el('div', 'kv');
+        attrRows(f.properties).forEach(([k, v]) => kv.append(el('span', null, niceKey(k)), el('span', null, String(v))));
+        c.append(kv);
+      });
+      box.append(c);
     });
-    box.append(c);
+    box.append(el('p', 'src', 'Nguồn: Cổng thông tin quy hoạch xây dựng Đà Nẵng. Chỉ để tham khảo, cần đối chiếu hồ sơ tại cơ quan có thẩm quyền.'));
   }
-  // Tra thông tin tại điểm qua ArcGIS REST identify, đi qua proxy /api/gis (máy chủ Sở gửi 2 header CORS nên trình duyệt chặn gọi thẳng)
-  async function identifyRest(lat, lng) {
-    const b = map.getBounds(), sz = map.getSize();
-    const params = new URLSearchParams({
-      geometry: `${lng},${lat}`, geometryType: 'esriGeometryPoint', sr: '4326', layers: 'visible', tolerance: '3',
-      mapExtent: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(','), imageDisplay: `${sz.x},${sz.y},96`, returnGeometry: 'false', f: 'json',
-    });
-    try {
-      const r = await fetch(`/api/gis?path=${encodeURIComponent(PL.identifyPath + '/identify')}&${params}`);
-      if (!r.ok) return [];
-      const j = await r.json();
-      return (j.results || []).map((x) => ({ properties: Object.assign({ Lop: x.layerName }, x.attributes) }));
-    } catch (_) { return []; }
-  }
+  const hasIdentify = () => officials.some((o) => o.identify);
   function identifyOfficial(lat, lng) {
-    if (planning && PL.type === 'wms') return PL.identifyPath ? identifyRest(lat, lng) : Promise.resolve(null);
-    return new Promise((resolve) => {
-      if (!planning) return resolve(null);
-      planning.identify().on(map).at([lat, lng]).tolerance(2).layers('visible').run((err, fc) => resolve(err ? [] : (fc && fc.features) || []));
-    });
+    const targets = officials.filter((o) => o.identify);
+    if (!targets.length) return Promise.resolve(null);
+    const b = map.getBounds(), sz = map.getSize();
+    const params = { geometry: `${lng},${lat}`, geometryType: 'esriGeometryPoint', sr: '4326', layers: 'all', tolerance: '2',
+      mapExtent: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((v) => v.toFixed(6)).join(','), imageDisplay: `${sz.x},${sz.y},96`, returnGeometry: 'false' };
+    return Promise.all(targets.map(async (o) => {
+      try { const j = await gis(svcPath(o.service) + '/identify', params); return { o, feats: (j.results || []).map((x) => ({ layer: x.layerName, properties: x.attributes })) }; }
+      catch (_) { return { o, feats: [], err: true }; }
+    }));
   }
-  function queryParcel(to, thua, xa) {
-    return new Promise((resolve, reject) => {
-      const P = CFG.parcel || {};
-      if (!P.url || !L.esri) return reject(new Error('noconfig'));
-      const f = P.fields || {};
-      let where = `${f.to}=${to | 0} AND ${f.thua}=${thua | 0}`;
-      const xaSafe = cut(xa, 40).replace(/'/g, "''");
-      if (xaSafe && f.xa) where += ` AND UPPER(${f.xa}) LIKE UPPER('%${xaSafe}%')`;
-      L.esri.query({ url: P.url, useCors: false }).where(where).limit(20).run((err, fc) => (err ? reject(err) : resolve((fc && fc.features) || [])));
-    });
+  // tra tờ/thửa: tự dò lớp thửa và tên trường trong dịch vụ địa chính
+  let parcelMeta = null;
+  async function parcelInfo() {
+    if (parcelMeta) return parcelMeta;
+    const svc = svcPath(OFF.parcelService);
+    const meta = await gis(svc, {});
+    const leaves = (meta.layers || []).filter((l) => !l.subLayerIds);
+    const ly = leaves.find((l) => /th[ửu]a|thua/i.test(l.name)) || leaves[0];
+    if (!ly) throw new Error('nolayer');
+    const fields = (await gis(`${svc}/${ly.id}`, {})).fields || [];
+    const find = (re) => fields.find((f) => re.test(f.name) || re.test(f.alias || ''));
+    const F = {
+      layer: ly.id,
+      to: find(/^(so_?)?to(_?ban_?do|bd)?$|^sh_?to|so_?to|tobando|sotobd|shbando|t[ờo]\s*b[ảa]n\s*đ[ồo]|s[ốo]\s*t[ờo]/i),
+      thua: find(/thua|th[ửu]a/i),
+      xa: find(/ten_?(phuong|xa)|ph[ưu][ờo]ng|x[ãa]\b|^xa$|tenxa/i),
+      dientich: find(/dien_?tich|di[ệe]n\s*t[íi]ch|^dt$/i),
+      loaidat: find(/loai_?dat|lo[ạa]i\s*đ[ấa]t|mdsd|m[ụu]c\s*đ[íi]ch|ky_?hieu/i),
+    };
+    if (!F.to || !F.thua) throw new Error('nofields');
+    parcelMeta = F; return F;
+  }
+  const fold = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase();
+  async function queryParcel(to, thua, xa) {
+    const F = await parcelInfo();
+    const val = (f, v) => (/String/.test(f.type) ? `'${String(v | 0)}'` : String(v | 0));
+    const where = `${F.to.name}=${val(F.to, to)} AND ${F.thua.name}=${val(F.thua, thua)}`;
+    const j = await gis(`${svcPath(OFF.parcelService)}/${F.layer}/query`, { where, outFields: '*', returnGeometry: 'true', outSR: '4326' });
+    let feats = (j.features || []).map((f) => ({ type: 'Feature', properties: f.attributes || {}, geometry: f.geometry && f.geometry.rings ? { type: 'Polygon', coordinates: f.geometry.rings } : null })).filter((f) => f.geometry);
+    const k = fold(xa).replace(/^(p|x|phuong|xa)\.?\s+/, '');
+    if (k) { const hit = feats.filter((f) => Object.values(f.properties).some((v) => typeof v === 'string' && fold(v).includes(k))); if (hit.length) feats = hit; }
+    return feats.slice(0, 20);
   }
 
   // ---------- ghim ----------
@@ -297,11 +374,10 @@
     placePin(lat, lng, opts.zoom);
     setSheet('half');
     renderNearby($('#p-nearby'), lat, lng);
-    renderOfficial($('#p-official'), '', null);
-    if (planning) {
-      renderOfficial($('#p-official'), CFG.planning.name || 'Quy hoạch chính thức', null);
-      const feats = await identifyOfficial(lat, lng);
-      if (id === reqId) { current.official = feats; renderOfficial($('#p-official'), CFG.planning.name || 'Quy hoạch chính thức', feats); }
+    renderOfficial($('#p-official'), hasIdentify() ? 'loading' : null);
+    if (hasIdentify()) {
+      const groups = await identifyOfficial(lat, lng);
+      if (id === reqId) { current.official = groups; renderOfficial($('#p-official'), groups); }
     }
     if (!opts.addr) {
       const addr = await reverse(lat, lng);
@@ -330,13 +406,15 @@
     sug.hidden = true;
     if (r.kind === 'point') { q.blur(); return lookup(r.lat, r.lng, { src: r.src, zoom: 17 }); }
     if (r.kind === 'parcel') {
-      if (!(CFG.parcel && CFG.parcel.url)) return suggestMsg('Tra theo số tờ, số thửa chưa được kết nối dữ liệu địa chính. Tạm thời hãy nhập toạ độ VN2000 trên sổ đỏ (X, Y của một góc thửa).');
+      if (!OFF.parcelService) return suggestMsg('Tra theo số tờ, số thửa chưa được kết nối dữ liệu địa chính. Tạm thời hãy nhập toạ độ VN2000 trên sổ đỏ (X, Y của một góc thửa).');
       suggestMsg('Đang tìm thửa đất…');
       try {
         const feats = await queryParcel(r.to, r.thua, r.xa);
         if (!feats.length) return suggestMsg(`Không tìm thấy tờ ${r.to} thửa ${r.thua}${r.xa ? ' ở ' + r.xa : ''}. Thêm tên phường/xã, ví dụ: tờ 12 thửa 345 Hòa Xuân`);
-        const f = CFG.parcel.fields || {};
+        const F = await parcelInfo();
+        const f = { xa: F.xa && F.xa.name, dientich: F.dientich && F.dientich.name, loaidat: F.loaidat && F.loaidat.name };
         const pick = (feat) => {
+          sug.hidden = true;
           if (parcelShape) map.removeLayer(parcelShape);
           parcelShape = L.geoJSON(feat, { style: { color: '#e0245e', weight: 3, fillOpacity: 0.12 } }).addTo(map);
           const c = turf.pointOnFeature(feat).geometry.coordinates;
@@ -346,7 +424,7 @@
         };
         if (feats.length === 1) { q.blur(); return pick(feats[0]); }
         suggestList(feats.map((ft) => ({ title: `Tờ ${r.to} thửa ${r.thua}`, sub: (ft.properties && ft.properties[f.xa]) || '', ft })), (it) => pick(it.ft));
-      } catch (_) { suggestMsg('Không kết nối được dữ liệu địa chính. Thử lại sau.'); }
+      } catch (e) { suggestMsg(/nofields|nolayer/.test(e.message) ? 'Chưa nhận diện được cấu trúc dữ liệu địa chính. Tạm thời hãy nhập toạ độ VN2000 trên sổ đỏ.' : 'Không kết nối được dữ liệu địa chính của Sở. Thử lại sau.'); }
       return;
     }
     suggestMsg('Đang tìm địa chỉ…');
@@ -440,13 +518,15 @@
   });
   $('#share-copy').addEventListener('click', () => copyText($('#share-url').value, 'Đã copy link'));
 
-  function postText(o, a, url, nearby) {
+  function postText(o, a, url, nearby, official) {
+    const qh = officialSummary(official);
     const z = a.inZone ? `thuộc vùng "${a.inZone.name}" (${TIER[a.inZone.t].n.toLowerCase()})` : 'ngoài các vùng tiềm năng đã đánh dấu';
     const d = a.dist.slice(0, 3).map((x) => `${x.name.replace(/ \(.+\)$/, '')} ${fmtKm(x.km)}`).join(' · ');
     return [
       o.t || 'Bán lô đất',
       o.p && `Giá: ${o.p}`, o.s && `Diện tích: ${o.s}`,
       o.a && `Vị trí: ${o.a}`,
+      qh && `Quy hoạch (Sở Xây dựng): ${qh}`,
       `Quy hoạch chung ĐN 2050: ${z}`,
       `Cách: ${d}`,
       nearbyLine(nearby),
@@ -459,7 +539,7 @@
     if (!current) return;
     const s = findSaved();
     const o = s || { v: 1, la: +current.lat.toFixed(6), lo: +current.lng.toFixed(6), a: cut(current.addr, 120), b: broker.name, ph: broker.phone };
-    copyText(postText(o, current.a, shareUrl(o), current.nearby), 'Đã copy nội dung tin đăng');
+    copyText(postText(o, current.a, shareUrl(o), current.nearby, current.official), 'Đã copy nội dung tin đăng');
   });
 
   // ---------- lô đã lưu ----------
@@ -709,12 +789,13 @@
     placePin(o.la, o.lo, 16);
     setSheet('half');
     renderNearby($('#g-nearby'), o.la, o.lo);
-    if (planning) identifyOfficial(o.la, o.lo).then((f) => renderOfficial($('#g-official'), CFG.planning.name || 'Quy hoạch chính thức', f));
+    if (hasIdentify()) { renderOfficial($('#g-official'), 'loading'); identifyOfficial(o.la, o.lo).then((g) => renderOfficial($('#g-official'), g)); }
   }
 
   // ---------- khởi động ----------
   renderSaved();
   labels();
+  syncOfficial();
   const sp = new URLSearchParams(location.search).get('s');
   let guest = null;
   if (sp) { try { guest = b64.dec(sp); } catch (_) {} }
@@ -722,5 +803,5 @@
   window.addEventListener('resize', () => map.invalidateSize());
 
   // cho phép kiểm thử logic từ console / node
-  window.__qh = { parseInput, analyze, fmtKm, postText, b64, parseOverpass, nearbyLine };
+  window.__qh = { parseInput, analyze, fmtKm, postText, b64, parseOverpass, nearbyLine, officialSummary, parcelInfo, queryParcel };
 })();
