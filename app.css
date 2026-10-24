@@ -107,6 +107,8 @@ body.measuring .leaflet-container{cursor:crosshair}
 .zonecard .zn{font-weight:700;font-size:15px;line-height:1.3;margin-top:1px}
 .zonecard .zh{color:var(--muted);font-size:13px}
 .zonecard ul{margin:6px 0 0;padding-left:1.05rem;font-size:13.5px}
+.zonecard .zfoot{font-size:11.5px;color:var(--muted);margin-top:8px;border-top:1px solid var(--line);padding-top:6px}
+.lp-sep{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .zonecard .zr{font-size:13px;color:var(--muted);margin-top:6px}
 .official{border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-top:10px}
 .official h4{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}

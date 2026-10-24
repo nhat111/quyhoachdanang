@@ -60,7 +60,7 @@
   L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
   const zoneLayer = L.layerGroup(), reclaimLayer = L.layerGroup(),
-        infraLayer = L.layerGroup().addTo(map), poiLayer = L.layerGroup().addTo(map);
+        infraLayer = L.layerGroup(), poiLayer = L.layerGroup();
   const polys = {}, pins = {};
   Z.forEach((z) => {
     const c = TIER[z.t].c;
@@ -134,29 +134,31 @@
     b.setAttribute('aria-pressed', b.dataset.base === base);
     b.addEventListener('click', () => setBase(b.dataset.base));
   });
-  // vùng đánh số: mặc định ẩn (đã có lớp quy hoạch của Sở), bật bằng nút trên bản đồ hoặc bảng lớp
-  function syncIllusBtn() { $('#btn-zones').setAttribute('aria-pressed', map.hasLayer(zoneLayer) || map.hasLayer(reclaimLayer)); }
-  function setZones(on) {
-    if (on) zoneLayer.addTo(map); else map.removeLayer(zoneLayer);
-    $('#ov-zones').checked = on; store.set('qh_zones', on); syncIllusBtn();
+  // Các lớp vẽ minh hoạ (vùng đánh số, khu lấn biển, hạ tầng, điểm mốc): mặc định ẩn để chỉ thấy dữ liệu chính thức.
+  // Mỗi lớp bật riêng trong bảng lớp; nút đa giác trên bản đồ bật/tắt tất cả.
+  const ILLUS = {
+    zones: { layer: zoneLayer, cb: 'ov-zones' },
+    reclaim: { layer: reclaimLayer, cb: 'ov-reclaim' },
+    infra: { layer: infraLayer, cb: 'ov-infra' },
+    poi: { layer: poiLayer, cb: 'ov-poi' },
+  };
+  function syncIllusBtn() { $('#btn-zones').setAttribute('aria-pressed', Object.values(ILLUS).some((x) => map.hasLayer(x.layer))); }
+  function setIllus(key, on) {
+    const x = ILLUS[key];
+    if (on) x.layer.addTo(map); else map.removeLayer(x.layer);
+    $('#' + x.cb).checked = on; store.set('qh_ill_' + key, on); syncIllusBtn();
+    if (key === 'poi') labels();
   }
-  setZones(store.get('qh_zones', false));
-  // khu lấn biển cũng là vẽ minh hoạ (quyết định chưa công bố ranh giới): mặc định ẩn
-  function setReclaim(on) {
-    if (on) reclaimLayer.addTo(map); else map.removeLayer(reclaimLayer);
-    $('#ov-reclaim').checked = on; store.set('qh_reclaim', on); syncIllusBtn();
-  }
-  setReclaim(store.get('qh_reclaim', false));
-  $('#ov-reclaim').addEventListener('change', (e) => setReclaim(e.target.checked));
-  // nút trên bản đồ bật/tắt cả hai lớp minh hoạ
-  $('#btn-zones').addEventListener('click', () => {
-    const on = !(map.hasLayer(zoneLayer) || map.hasLayer(reclaimLayer));
-    setZones(on); setReclaim(on);
-    toast(on ? 'Đã hiện vùng đánh số và khu lấn biển (minh hoạ)' : 'Đã ẩn các lớp minh hoạ');
+  const setZones = (on) => setIllus('zones', on);
+  Object.entries(ILLUS).forEach(([k, x]) => {
+    setIllus(k, store.get('qh_ill_' + k, false));
+    $('#' + x.cb).addEventListener('change', (e) => setIllus(k, e.target.checked));
   });
-  $('#ov-zones').addEventListener('change', (e) => setZones(e.target.checked));
-  const toggles = { 'ov-infra': infraLayer, 'ov-poi': poiLayer };
-  Object.entries(toggles).forEach(([id, layer]) => $('#' + id).addEventListener('change', (e) => { if (e.target.checked) layer.addTo(map); else map.removeLayer(layer); }));
+  $('#btn-zones').addEventListener('click', () => {
+    const on = !Object.values(ILLUS).some((x) => map.hasLayer(x.layer));
+    Object.keys(ILLUS).forEach((k) => setIllus(k, on));
+    toast(on ? 'Đã hiện các lớp minh hoạ' : 'Đã ẩn các lớp minh hoạ');
+  });
   // hàng bật/tắt cho từng lớp của Sở + chú giải tải khi mở bảng lớp
   officials.forEach((o) => {
     const row = el('label', 'chk');
@@ -410,7 +412,8 @@
       c.append(el('div', 'zn', 'Ngoài các vùng tiềm năng đã đánh dấu'));
       if (a.nearZone) c.append(el('div', 'zh', `Gần nhất: vùng ${a.nearZone.z.id}. ${a.nearZone.z.name}, cách ${fmtKm(a.nearZone.km)}`));
     }
-    if (a.inReclaim) c.append(el('div', 'zr', `Điểm nằm trong ${a.inReclaim.name}, tức đang là mặt biển. Kiểm tra lại toạ độ.`));
+    if (a.inReclaim) c.append(el('div', 'zr', `Điểm nằm trong ${a.inReclaim.name} (vẽ minh hoạ).`));
+    c.append(el('div', 'zfoot', 'Vùng vẽ minh hoạ theo QĐ 2016/QĐ-TTg; mức tiềm năng là nhận định, không phải tư vấn đầu tư.'));
     return c;
   }
   function distRows(box, a) { box.replaceChildren(); a.dist.forEach((d) => box.append(el('span', null, d.name), el('b', null, fmtKm(d.km)))); }

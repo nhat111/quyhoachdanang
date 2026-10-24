@@ -84,10 +84,10 @@ const LINES=[
 const TARGETS=[
  {name:"Trung tâm (Cầu Rồng)",pt:[16.0612,108.2272]},
  {name:"Sân bay quốc tế Đà Nẵng",pt:[16.0439,108.1994]},
- {name:"Bãi biển gần nhất (trục ven biển)",line:LINES[1].pts},
+ {name:"Bãi biển gần nhất (ước tính)",line:LINES[1].pts},
  {name:"Cảng Liên Chiểu",pt:[16.128,108.137]},
  {name:"Phố cổ Hội An",pt:[15.8775,108.3281]},
- {name:"Khu CNC mở rộng",pt:[16.098,108.068]},
- {name:"Cao tốc Bắc – Nam (tuyến)",line:LINES[0].pts},
+ {name:"Khu CNC mở rộng (ước tính)",pt:[16.098,108.068]},
+ {name:"Cao tốc Bắc – Nam (ước tính)",line:LINES[0].pts},
  {name:"Sân bay Chu Lai",pt:[15.4033,108.7059]}
 ];
