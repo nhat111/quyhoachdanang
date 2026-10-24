@@ -276,6 +276,7 @@
     markSaved();
     placePin(lat, lng, opts.zoom);
     setSheet('half');
+    renderNearby($('#p-nearby'), lat, lng);
     renderOfficial($('#p-official'), '', null);
     if (planning) {
       renderOfficial($('#p-official'), CFG.planning.name || 'Quy hoạch chính thức', null);
@@ -419,7 +420,7 @@
   });
   $('#share-copy').addEventListener('click', () => copyText($('#share-url').value, 'Đã copy link'));
 
-  function postText(o, a, url) {
+  function postText(o, a, url, nearby) {
     const z = a.inZone ? `thuộc vùng "${a.inZone.name}" (${TIER[a.inZone.t].n.toLowerCase()})` : 'ngoài các vùng tiềm năng đã đánh dấu';
     const d = a.dist.slice(0, 3).map((x) => `${x.name.replace(/ \(.+\)$/, '')} ${fmtKm(x.km)}`).join(' · ');
     return [
@@ -428,6 +429,7 @@
       o.a && `Vị trí: ${o.a}`,
       `Quy hoạch chung ĐN 2050: ${z}`,
       `Cách: ${d}`,
+      nearbyLine(nearby),
       o.n,
       (o.b || o.ph) && `Liên hệ: ${[o.b, o.ph].filter(Boolean).join(' – ')}`,
       url && `Xem vị trí và quy hoạch: ${url}`,
@@ -437,7 +439,7 @@
     if (!current) return;
     const s = findSaved();
     const o = s || { v: 1, la: +current.lat.toFixed(6), lo: +current.lng.toFixed(6), a: cut(current.addr, 120), b: broker.name, ph: broker.phone };
-    copyText(postText(o, current.a, shareUrl(o)), 'Đã copy nội dung tin đăng');
+    copyText(postText(o, current.a, shareUrl(o), current.nearby), 'Đã copy nội dung tin đăng');
   });
 
   // ---------- lô đã lưu ----------
@@ -504,6 +506,165 @@
     draw();
   })();
 
+
+  // ---------- tiện ích xung quanh (OpenStreetMap qua Overpass API) ----------
+  const escH = (v) => String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const CATS = {
+    school: { n: 'Trường học', c: '#2f6fdf', g: 'T' },
+    market: { n: 'Chợ, siêu thị', c: '#d9822b', g: 'C' },
+    health: { n: 'Y tế', c: '#d6336c', g: '+' },
+    park: { n: 'Công viên', c: '#2f9e44', g: 'P' },
+    bank: { n: 'Ngân hàng', c: '#7048e8', g: '$' },
+    admin: { n: 'Hành chính', c: '#495057', g: 'H' },
+  };
+  const SUB = { kindergarten: 'Mầm non', school: 'Trường học', college: 'Cao đẳng', university: 'Đại học', marketplace: 'Chợ', supermarket: 'Siêu thị',
+    mall: 'Trung tâm thương mại', department_store: 'Trung tâm thương mại', hospital: 'Bệnh viện', clinic: 'Phòng khám', doctors: 'Phòng khám',
+    pharmacy: 'Nhà thuốc', park: 'Công viên', bank: 'Ngân hàng', townhall: 'UBND', police: 'Công an' };
+  const NEED_NAME = /^(pharmacy|clinic|doctors|bank|police)$/;
+  function catOf(t) {
+    const a = t.amenity, sh = t.shop;
+    if (/^(kindergarten|school|college|university)$/.test(a)) return 'school';
+    if (a === 'marketplace' || /^(supermarket|mall|department_store)$/.test(sh)) return 'market';
+    if (/^(hospital|clinic|doctors|pharmacy)$/.test(a)) return 'health';
+    if (t.leisure === 'park') return 'park';
+    if (a === 'bank') return 'bank';
+    if (/^(townhall|police)$/.test(a)) return 'admin';
+    return null;
+  }
+  const OVERPASS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
+  const nbCache = new Map();
+  function parseOverpass(j, lat, lng, r) {
+    const p0 = turf.point([lng, lat]), seen = new Set();
+    return (j.elements || []).map((e) => {
+      const t = e.tags || {}, cat = catOf(t);
+      if (!cat) return null;
+      const la = e.lat != null ? e.lat : e.center && e.center.lat, lo = e.lon != null ? e.lon : e.center && e.center.lon;
+      if (la == null || lo == null) return null;
+      const kind = t.amenity || t.shop || t.leisure, name = cut(t['name:vi'] || t.name || '', 80);
+      if (!name && NEED_NAME.test(kind)) return null;
+      const label = name || `${SUB[kind] || CATS[cat].n} (chưa có tên)`;
+      const key = cat + label + la.toFixed(3) + lo.toFixed(3);
+      if (seen.has(key)) return null; seen.add(key);
+      return { cat, kind, sub: SUB[kind] || CATS[cat].n, name: label, named: !!name, lat: la, lng: lo, km: turf.distance(p0, turf.point([lo, la]), { units: 'kilometers' }) };
+    }).filter((x) => x && x.km * 1000 <= r * 1.05).sort((a, b) => a.km - b.km);
+  }
+  async function fetchNearby(lat, lng, r) {
+    const key = `${lat.toFixed(4)},${lng.toFixed(4)},${r}`;
+    if (nbCache.has(key)) return nbCache.get(key);
+    const A = `(around:${r},${lat.toFixed(6)},${lng.toFixed(6)})`;
+    const q = `[out:json][timeout:25];(nwr${A}[amenity~"^(kindergarten|school|college|university|marketplace|hospital|clinic|doctors|pharmacy|bank|townhall|police)$"];nwr${A}[shop~"^(supermarket|mall|department_store)$"];nwr${A}[leisure=park];);out center tags 400;`;
+    let lastErr;
+    for (const ep of OVERPASS) {
+      try {
+        const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 25000);
+        const res = await fetch(ep, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, signal: ctl.signal });
+        clearTimeout(tm);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const items = parseOverpass(await res.json(), lat, lng, r);
+        nbCache.set(key, items);
+        return items;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('overpass');
+  }
+
+  const nbLayer = L.layerGroup().addTo(map);
+  const amIcon = (cat) => L.divIcon({ className: '', html: `<div class="amk" style="background:${CATS[cat].c}">${CATS[cat].g}</div>`, iconSize: [22, 22], iconAnchor: [11, 11] });
+  const nbState = { r: store.get('qh_nb_r', 1000), show: new Set(Object.keys(CATS)) };
+  let nbReq = 0;
+  function clearNearby() { nbReq++; nbLayer.clearLayers(); }
+
+  async function renderNearby(box, lat, lng) {
+    const id = ++nbReq;
+    box.replaceChildren();
+    nbLayer.clearLayers();
+    const rad = el('div', 'chips nb-r');
+    [[500, '500 m'], [1000, '1 km'], [2000, '2 km']].forEach(([r, t]) => {
+      const b = el('button', 'chip', t); b.type = 'button'; b.setAttribute('aria-pressed', nbState.r === r);
+      b.addEventListener('click', () => { nbState.r = r; store.set('qh_nb_r', r); renderNearby(box, lat, lng); });
+      rad.append(b);
+    });
+    const status = el('p', 'hint', 'Đang tải tiện ích xung quanh…');
+    box.append(rad, status);
+    const ring = L.circle([lat, lng], { radius: nbState.r, color: '#0d5c63', weight: 1.5, dashArray: '5 6', fill: false, interactive: false }).addTo(nbLayer);
+    let items;
+    try { items = await fetchNearby(lat, lng, nbState.r); }
+    catch (_) {
+      if (id !== nbReq) return;
+      status.textContent = 'Không tải được tiện ích lúc này (máy chủ OpenStreetMap đang bận).';
+      const retry = el('button', 'btn ghost sm', 'Thử lại'); retry.type = 'button';
+      retry.addEventListener('click', () => renderNearby(box, lat, lng)); box.append(retry);
+      return;
+    }
+    if (id !== nbReq) return;
+    if (current && current.lat === lat && current.lng === lng) current.nearby = items;
+    status.remove();
+    if (!items.length) { box.append(el('p', 'hint', 'Chưa có tiện ích nào trong bán kính này trên OpenStreetMap. Thử bán kính lớn hơn.')); return; }
+
+    // gần nhất theo từng loại
+    const sum = el('div', 'nb-sum');
+    Object.entries(CATS).forEach(([k, v]) => {
+      const f = items.find((x) => x.cat === k && x.named) || items.find((x) => x.cat === k);
+      if (!f) return;
+      const d = el('span', 'dot'); d.style.background = v.c;
+      const lbl = el('span', 'nb-k'); lbl.append(d, document.createTextNode(v.n));
+      sum.append(lbl, el('span', 'nb-n', f.name), el('b', null, fmtKm(f.km)));
+    });
+
+    const cats = el('div', 'chips');
+    const list = el('div', 'nb-list');
+    let limit = 12;
+    const draw = () => {
+      nbLayer.clearLayers(); ring.addTo(nbLayer);
+      const markers = [];
+      items.forEach((it) => {
+        if (!nbState.show.has(it.cat)) return;
+        const m = L.marker([it.lat, it.lng], { icon: amIcon(it.cat), keyboard: false })
+          .bindPopup(`<b>${escH(it.name)}</b><br>${escH(it.sub)} · cách ${fmtKm(it.km)}`);
+        if (!$('#ov-nearby').checked) return;
+        m.addTo(nbLayer); markers.push([it, m]);
+      });
+      list.replaceChildren();
+      const shown = items.filter((it) => nbState.show.has(it.cat));
+      shown.slice(0, limit).forEach((it) => {
+        const b = el('button', 'nb-item'); b.type = 'button';
+        const ic = el('span', 'amk sm', CATS[it.cat].g); ic.style.background = CATS[it.cat].c;
+        const tx = el('span', 'nb-t'); tx.append(el('b', null, it.name), el('small', null, it.sub));
+        b.append(ic, tx, el('span', 'nb-d', fmtKm(it.km)));
+        b.addEventListener('click', () => {
+          if (!isDesktop()) setSheet('peek');
+          map.setView([it.lat, it.lng], Math.max(map.getZoom(), 16));
+          const mk = markers.find(([x]) => x === it); if (mk) mk[1].openPopup();
+        });
+        list.append(b);
+      });
+      if (shown.length > limit) {
+        const more = el('button', 'btn ghost sm nb-more', `Xem thêm ${shown.length - limit}`); more.type = 'button';
+        more.addEventListener('click', () => { limit += 20; draw(); }); list.append(more);
+      }
+    };
+    Object.entries(CATS).forEach(([k, v]) => {
+      const n = items.filter((x) => x.cat === k).length;
+      if (!n) return;
+      const b = el('button', 'chip'); b.type = 'button'; b.setAttribute('aria-pressed', nbState.show.has(k));
+      const d = el('span', 'dot'); d.style.background = v.c; b.append(d, document.createTextNode(`${v.n} ${n}`));
+      b.addEventListener('click', () => { if (nbState.show.has(k)) nbState.show.delete(k); else nbState.show.add(k); b.setAttribute('aria-pressed', nbState.show.has(k)); draw(); });
+      cats.append(b);
+    });
+    box.append(sum, cats, list, el('p', 'src', 'Tiện ích: © OpenStreetMap contributors. Có thể thiếu hoặc chưa cập nhật; khoảng cách là đường chim bay.'));
+    draw();
+  }
+  $('#ov-nearby').addEventListener('change', (e) => { if (e.target.checked) nbLayer.addTo(map); else map.removeLayer(nbLayer); });
+  function nearbyLine(items) {
+    if (!items || !items.length) return '';
+    const parts = [];
+    ['school', 'market', 'health', 'park'].forEach((k) => {
+      const f = items.find((x) => x.cat === k && x.named);
+      if (f) parts.push(`${f.name} ${fmtKm(f.km)}`);
+    });
+    return parts.length ? `Gần: ${parts.join(' · ')}` : '';
+  }
+
   // ---------- trang của khách (?s=...) ----------
   function guestMode(o) {
     document.body.classList.add('guest');
@@ -527,6 +688,7 @@
     current = { lat: o.la, lng: o.lo, addr: o.a, a };
     placePin(o.la, o.lo, 16);
     setSheet('half');
+    renderNearby($('#g-nearby'), o.la, o.lo);
     if (planning) identifyOfficial(o.la, o.lo).then((f) => renderOfficial($('#g-official'), CFG.planning.name || 'Quy hoạch chính thức', f));
   }
 
@@ -540,5 +702,5 @@
   window.addEventListener('resize', () => map.invalidateSize());
 
   // cho phép kiểm thử logic từ console / node
-  window.__qh = { parseInput, analyze, fmtKm, postText, b64 };
+  window.__qh = { parseInput, analyze, fmtKm, postText, b64, parseOverpass, nearbyLine };
 })();

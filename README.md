@@ -7,6 +7,7 @@ Công cụ tra vị trí lô đất theo Quy hoạch chung TP Đà Nẵng đến
 - **Kết quả:** vùng quy hoạch chứa điểm, lý do và rủi ro, 5 mốc hạ tầng gần nhất, địa chỉ gần đúng.
 - **Lớp quy hoạch chính thức:** phủ lớp ArcGIS của Sở Xây dựng và tra thông tin tại điểm khi điền URL trong `config.js`.
 - **Môi giới:** lưu lô (trên máy), copy nội dung tin đăng, link gửi khách có ảnh xem trước khi gửi Zalo, trang của khách có nút Gọi / Zalo / Chỉ đường.
+- **Tiện ích xung quanh:** trường học, chợ/siêu thị, y tế, công viên, ngân hàng, hành chính trong bán kính 500 m / 1 km / 2 km (OpenStreetMap qua Overpass API), vẽ lên bản đồ, có trong trang của khách và tin đăng.
 - **Đo:** khoảng cách và diện tích trên bản đồ.
 
 ## Cấu trúc

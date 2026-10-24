@@ -47,6 +47,7 @@
   <label class="chk"><input type="checkbox" id="ov-reclaim" checked> Khu lấn biển</label>
   <label class="chk"><input type="checkbox" id="ov-infra" checked> Hạ tầng giao thông</label>
   <label class="chk"><input type="checkbox" id="ov-poi" checked> Điểm mốc</label>
+  <label class="chk"><input type="checkbox" id="ov-nearby" checked> Tiện ích quanh lô</label>
   <label class="chk" id="ov-planning-row" hidden><input type="checkbox" id="ov-planning" checked> <span id="ov-planning-name"></span></label>
   <div class="legend" id="legend"></div>
 </div>
@@ -98,6 +99,8 @@
         <div id="p-official"></div>
         <div class="subh">Khoảng cách đường chim bay</div>
         <div class="dist" id="p-dist"></div>
+        <div class="subh">Tiện ích xung quanh</div>
+        <div id="p-nearby"></div>
 
         <form class="card" id="lot-form" hidden>
           <h3 id="lot-form-h">Thông tin lô</h3>
@@ -173,6 +176,8 @@
       <div id="g-official"></div>
       <div class="subh">Khoảng cách đường chim bay</div>
       <div class="dist" id="g-dist"></div>
+      <div class="subh">Tiện ích xung quanh</div>
+      <div id="g-nearby"></div>
       <p class="disc">Vùng quy hoạch được vẽ minh hoạ từ Quyết định 2016/QĐ-TTg, chưa phải bản đồ quy hoạch chính thức. Hãy kiểm tra quy hoạch sử dụng đất của thửa tại cơ quan có thẩm quyền trước khi giao dịch.</p>
       <a class="btn ghost" href="./">Mở bản đồ quy hoạch đầy đủ</a>
     </div>
