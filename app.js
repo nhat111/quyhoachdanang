@@ -29,12 +29,33 @@
   const map = L.map('map', { zoomControl: false, tap: true, maxBoundsViscosity: 0.7 }).setView([16.04, 108.21], 12);
   map.setMaxBounds([[14.6, 106.8], [16.9, 109.5]]);
   const bases = {
+    street: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Bản đồ © Esri, HERE, Garmin, OpenStreetMap' }),
     osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }),
     sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Ảnh © Esri' }),
     gray: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: '© Esri' }),
   };
-  let base = bases[store.get('qh_base', 'osm')] ? store.get('qh_base', 'osm') : 'osm';
+  let base = bases[store.get('qh_base', 'street')] ? store.get('qh_base', 'street') : 'street';
   bases[base].addTo(map);
+  // nền bị chặn (nhiều tile lỗi, không tile nào tải được) → tự chuyển sang nền kế tiếp
+  const FALLBACK = { osm: 'street', street: 'gray', gray: 'sat', sat: 'street' };
+  Object.entries(bases).forEach(([k, layer]) => {
+    let ok = 0, bad = 0;
+    layer.on('tileload', () => { ok++; });
+    layer.on('tileerror', () => {
+      bad++;
+      if (k !== base || ok > 0 || bad < 6) return;
+      const next = FALLBACK[k];
+      bad = -1000; // chỉ chuyển một lần cho mỗi nền
+      setBase(next, true);
+    });
+  });
+  function setBase(k, auto) {
+    if (!bases[k] || k === base) return;
+    map.removeLayer(bases[base]); base = k; bases[base].addTo(map); bases[base].bringToBack();
+    store.set('qh_base', base);
+    document.querySelectorAll('#base-seg button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.base === base));
+    if (auto) toast('Bản đồ nền không tải được, đã chuyển sang nền khác');
+  }
   L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
   const zoneLayer = L.layerGroup().addTo(map), reclaimLayer = L.layerGroup().addTo(map),
@@ -90,10 +111,7 @@
   document.addEventListener('click', (e) => { const p = $('#layers-panel'); if (!p.hidden && !p.contains(e.target) && e.target.closest('#btn-layers') == null) { p.hidden = true; $('#btn-layers').setAttribute('aria-pressed', 'false'); } });
   $$('#base-seg button').forEach((b) => {
     b.setAttribute('aria-pressed', b.dataset.base === base);
-    b.addEventListener('click', () => {
-      map.removeLayer(bases[base]); base = b.dataset.base; bases[base].addTo(map); bases[base].bringToBack(); store.set('qh_base', base);
-      $$('#base-seg button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-    });
+    b.addEventListener('click', () => setBase(b.dataset.base));
   });
   const toggles = { 'ov-zones': zoneLayer, 'ov-reclaim': reclaimLayer, 'ov-infra': infraLayer, 'ov-poi': poiLayer };
   Object.entries(toggles).forEach(([id, layer]) => $('#' + id).addEventListener('change', (e) => { if (e.target.checked) layer.addTo(map); else map.removeLayer(layer); }));
