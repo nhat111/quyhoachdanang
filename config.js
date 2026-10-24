@@ -10,10 +10,14 @@
 window.QH_CONFIG = {
   // Lớp quy hoạch chính thức (ArcGIS MapServer). Ví dụ: 'https://.../arcgis/rest/services/QuyHoach/MapServer'
   planning: {
-    url: '',
-    layers: null,          // null = tất cả lớp; hoặc mảng id lớp, ví dụ [0, 2]
-    opacity: 0.65,
-    name: 'Quy hoạch chi tiết (Sở Xây dựng)',
+    // Lớp đang thử: dịch vụ SoNhaTest của Sở Xây dựng (bắt được từ thongtinquyhoachxaydung.danang.gov.vn).
+    // Đổi sang dịch vụ quy hoạch khi tìm được tên đúng trong /arcgis/rest/services/SoXayDung
+    type: 'wms',
+    url: 'https://thongtinquyhoachxaydung.danang.gov.vn/arcgis/services/SoXayDung/SoNhaTest/MapServer/WMSServer',
+    layers: '0',
+    identifyPath: '/arcgis/rest/services/SoXayDung/SoNhaTest/MapServer', // dùng cho tra thông tin tại điểm qua /api/gis
+    opacity: 0.8,
+    name: 'Dữ liệu Sở Xây dựng (thử nghiệm)',
   },
   // Lớp thửa đất để tra theo số tờ, số thửa. Ví dụ: 'https://.../MapServer/3'
   parcel: {

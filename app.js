@@ -57,10 +57,15 @@
 
   // lớp quy hoạch chính thức (ArcGIS), chỉ bật khi đã cấu hình
   let planning = null;
-  if (CFG.planning && CFG.planning.url && L.esri) {
-    planning = L.esri.dynamicMapLayer({ url: CFG.planning.url, opacity: CFG.planning.opacity || 0.65, useCors: false, layers: CFG.planning.layers || undefined, f: 'image' }).addTo(map);
-    $('#ov-planning-row').hidden = false; $('#ov-planning-name').textContent = CFG.planning.name || 'Quy hoạch chính thức';
+  const PL = CFG.planning || {};
+  if (PL.url && PL.type === 'wms') {
+    // ArcGIS WMS: ảnh tile không cần CORS
+    planning = L.tileLayer.wms(PL.url, { layers: PL.layers || '0', format: 'image/png', transparent: true, version: '1.3.0', uppercase: true,
+      opacity: PL.opacity || 0.7, maxZoom: 20, attribution: PL.attribution || 'Dữ liệu © Sở Xây dựng Đà Nẵng' }).addTo(map);
+  } else if (PL.url && L.esri) {
+    planning = L.esri.dynamicMapLayer({ url: PL.url, opacity: PL.opacity || 0.65, useCors: false, layers: PL.layers || undefined, f: 'image' }).addTo(map);
   }
+  if (planning) { $('#ov-planning-row').hidden = false; $('#ov-planning-name').textContent = PL.name || 'Quy hoạch chính thức'; }
 
   // ---------- bảng lớp ----------
   $('#legend').innerHTML = Object.values(TIER).map((t) => `<div><i style="background:${t.c}"></i>${t.n}</div>`).join('') +
@@ -207,7 +212,22 @@
     });
     box.append(c);
   }
+  // Tra thông tin tại điểm qua ArcGIS REST identify, đi qua proxy /api/gis (máy chủ Sở gửi 2 header CORS nên trình duyệt chặn gọi thẳng)
+  async function identifyRest(lat, lng) {
+    const b = map.getBounds(), sz = map.getSize();
+    const params = new URLSearchParams({
+      geometry: `${lng},${lat}`, geometryType: 'esriGeometryPoint', sr: '4326', layers: 'visible', tolerance: '3',
+      mapExtent: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(','), imageDisplay: `${sz.x},${sz.y},96`, returnGeometry: 'false', f: 'json',
+    });
+    try {
+      const r = await fetch(`/api/gis?path=${encodeURIComponent(PL.identifyPath + '/identify')}&${params}`);
+      if (!r.ok) return [];
+      const j = await r.json();
+      return (j.results || []).map((x) => ({ properties: Object.assign({ Lop: x.layerName }, x.attributes) }));
+    } catch (_) { return []; }
+  }
   function identifyOfficial(lat, lng) {
+    if (planning && PL.type === 'wms') return PL.identifyPath ? identifyRest(lat, lng) : Promise.resolve(null);
     return new Promise((resolve) => {
       if (!planning) return resolve(null);
       planning.identify().on(map).at([lat, lng]).tolerance(2).layers('visible').run((err, fc) => resolve(err ? [] : (fc && fc.features) || []));
