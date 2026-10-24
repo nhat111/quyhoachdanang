@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241318">
+<link rel="stylesheet" href="app.css?v=202610241325">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -131,6 +131,7 @@
     <div class="pane" id="pane-post" hidden>
       <form id="pf" novalidate>
         <div class="pf-head">
+          <button type="button" class="iconbtn pf-back" id="pf-back" aria-label="Quay lại bản đồ"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
           <h3>Tạo tin rao</h3>
           <button type="button" class="btn ghost sm" id="pf-sample" title="Điền dữ liệu minh họa để thử">Điền dữ liệu mẫu</button>
         </div>
@@ -145,16 +146,22 @@
           <legend>Thông tin bắt buộc</legend>
           <div class="lbl-t">Loại bất động sản <b class="req">*</b></div>
           <div class="chips" id="pf-type" role="radiogroup" aria-label="Loại bất động sản"></div>
-          <label for="pf-area">Địa chỉ hoặc khu vực <b class="req">*</b><input class="inp" id="pf-area" maxlength="120" placeholder="Kiệt 120 Nguyễn Văn Thoại, Sơn Trà, Đà Nẵng"></label>
+          <label for="pf-area"><span>Địa chỉ hoặc khu vực <b class="req">*</b></span><input class="inp" id="pf-area" maxlength="120" placeholder="Kiệt 120 Nguyễn Văn Thoại, Sơn Trà, Đà Nẵng"></label>
           <div class="err" id="pf-area-err" hidden></div>
-          <label for="pf-phone">Số điện thoại <b class="req">*</b><input class="inp" id="pf-phone" maxlength="20" inputmode="tel" placeholder="0905 123 456"></label>
+          <label for="pf-phone"><span>Số điện thoại <b class="req">*</b></span><input class="inp" id="pf-phone" maxlength="20" inputmode="tel" placeholder="0905 123 456"></label>
           <div class="err" id="pf-phone-err" hidden></div>
         </fieldset>
 
         <fieldset class="fs">
           <legend>Thông tin chính <span class="opt">không bắt buộc</span></legend>
-          <label for="pf-main">Hiện trạng<input class="inp" id="pf-main" maxlength="60" placeholder="Nhà 3 tầng, nhà cấp 4, đất trống"></label>
-          <div class="grid2">
+          <label for="pf-mainSel">Hiện trạng<select class="inp" id="pf-mainSel"></select></label>
+          <input class="inp" id="pf-main" maxlength="60" placeholder="Tự nhập hiện trạng, ví dụ: nhà 2 tầng có sân thượng" hidden aria-label="Hiện trạng tự nhập">
+          <div class="grid3">
+            <label for="pf-floors">Số tầng<select class="inp" id="pf-floors"><option value="">Không ghi</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="trên 6">Trên 6</option></select></label>
+            <label for="pf-beds">Phòng ngủ<select class="inp" id="pf-beds"><option value="">Không ghi</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="trên 6">Trên 6</option></select></label>
+            <label for="pf-wcs">WC<select class="inp" id="pf-wcs"><option value="">Không ghi</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option value="trên 6">Trên 6</option></select></label>
+          </div>
+          <div class="grid2 road-row">
             <label for="pf-road">Đường trước nhà<input class="inp" id="pf-road" maxlength="20" placeholder="5m5, 7m5, 10m"></label>
             <div><div class="lbl-t">Loại đường</div>
               <div class="seg seg3" id="pf-roadkind" role="radiogroup" aria-label="Loại đường">
@@ -170,24 +177,19 @@
         </fieldset>
 
         <details class="fs more" id="pf-more">
-          <summary>Thêm chi tiết <span class="opt">diện tích sử dụng, phòng, pháp lý, tiện ích…</span></summary>
+          <summary>Thêm chi tiết <span class="opt">diện tích sử dụng, kích thước, pháp lý, tiện ích…</span></summary>
           <div class="grid2">
             <label for="pf-useArea">Diện tích sử dụng (m²)<input class="inp" id="pf-useArea" maxlength="20" inputmode="decimal" placeholder="200"></label>
-            <label for="pf-floors">Số tầng<input class="inp" id="pf-floors" maxlength="10" placeholder="3"></label>
+            <label for="pf-furniture">Nội thất<select class="inp" id="pf-furniture"><option value="">Không ghi</option><option>Đầy đủ</option><option>Cơ bản</option><option>Nhà trống</option><option>Khác</option></select></label>
           </div>
           <div class="grid2">
             <label for="pf-front">Mặt tiền (m)<input class="inp" id="pf-front" maxlength="10" inputmode="decimal" placeholder="5"></label>
             <label for="pf-depth">Chiều sâu (m)<input class="inp" id="pf-depth" maxlength="10" inputmode="decimal" placeholder="15"></label>
           </div>
           <div class="grid2">
-            <label for="pf-beds">Phòng ngủ<input class="inp" id="pf-beds" maxlength="5" inputmode="numeric" placeholder="3"></label>
-            <label for="pf-wcs">WC<input class="inp" id="pf-wcs" maxlength="5" inputmode="numeric" placeholder="3"></label>
-          </div>
-          <div class="grid2">
             <label for="pf-direction">Hướng<select class="inp" id="pf-direction"><option value="">Không ghi</option><option>Đông</option><option>Tây</option><option>Nam</option><option>Bắc</option><option>Đông Nam</option><option>Đông Bắc</option><option>Tây Nam</option><option>Tây Bắc</option></select></label>
             <label for="pf-legal">Pháp lý<select class="inp" id="pf-legal"><option value="">Chưa cung cấp</option><option>Sổ đỏ</option><option>Sổ hồng</option><option>Hợp đồng</option><option>Khác</option></select></label>
           </div>
-          <label for="pf-furniture">Nội thất<select class="inp" id="pf-furniture"><option value="">Không ghi</option><option>Đầy đủ</option><option>Cơ bản</option><option>Nhà trống</option><option>Khác</option></select></label>
           <label for="pf-amenities">Tiện ích gần đó<textarea class="inp" id="pf-amenities" maxlength="300" rows="2" placeholder="Gần chợ, trường học, cách biển (tự nhập, cách nhau bằng dấu phẩy)"></textarea></label>
           <label for="pf-highlights">Điểm nổi bật<textarea class="inp" id="pf-highlights" maxlength="300" rows="2" placeholder="Nhà mới, khu dân cư yên tĩnh (chỉ ghi điều bạn chắc chắn)"></textarea></label>
           <label for="pf-note">Ghi chú khác<textarea class="inp" id="pf-note" maxlength="300" rows="2"></textarea></label>
@@ -300,9 +302,9 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241318"></script>
-<script src="listing.js?v=202610241318"></script>
-<script src="data.js?v=202610241318"></script>
-<script src="app.js?v=202610241318"></script>
+<script src="config.js?v=202610241325"></script>
+<script src="listing.js?v=202610241325"></script>
+<script src="data.js?v=202610241325"></script>
+<script src="app.js?v=202610241325"></script>
 </body>
 </html>

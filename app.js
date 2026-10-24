@@ -193,6 +193,9 @@
 
   // ---------- tab ----------
   function showTab(name) {
+    const was = document.body.classList.contains('composing');
+    document.body.classList.toggle('composing', name === 'post');
+    if (was !== (name === 'post')) setTimeout(() => map.invalidateSize(), 300);
     $$('#tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name));
     ['place', 'post', 'saved', 'zones', 'facts'].forEach((t) => { $('#pane-' + t).hidden = t !== name; });
     $('#sh-body').scrollTop = 0;
@@ -816,7 +819,7 @@
   function radioChips(box, items, key) {
     Object.entries(items).forEach(([k, v]) => {
       const b = el('button', 'chip', typeof v === 'string' ? v : v.label); b.type = 'button'; b.dataset.v = k;
-      b.addEventListener('click', () => { pf[key] = k; syncRadios(); saveDraft(); });
+      b.addEventListener('click', () => { pf[key] = k; syncRadios(); if (key === 'type') { fillStatus(); syncTypeFields(); } saveDraft(); });
       box.append(b);
     });
   }
@@ -825,9 +828,40 @@
   [['#pf-mode', 'mode'], ['#pf-roadkind', 'roadKind'], ['#pf-channel', 'channel']].forEach(([sel, key]) =>
     $$(sel + ' button').forEach((b) => b.addEventListener('click', () => { pf[key] = b.dataset.v; syncRadios(); saveDraft(); })));
 
+  const STATUS = {
+    nha: ['Nhà cấp 4', 'Nhà gác lửng', 'Nhà phố', 'Nhà mới xây', 'Nhà cũ', 'Nhà có sân vườn'],
+    dat: ['Đất trống', 'Đất có nhà cũ', 'Đất nền dự án'],
+    canho: ['Căn hộ mới', 'Căn hộ đã qua sử dụng', 'Căn hộ dịch vụ'],
+    phong: ['Phòng mới', 'Phòng có gác', 'Phòng khép kín'],
+    khac: ['Kiot', 'Mặt bằng kinh doanh', 'Kho xưởng'],
+  };
+  function fillStatus(keep) {
+    const sel = f$('mainSel'), cur = keep != null ? keep : (sel.value === '__other' ? f$('main').value : sel.value);
+    sel.replaceChildren();
+    const add = (v, t) => { const o = el('option', null, t || v); o.value = v; sel.append(o); };
+    add('', 'Không ghi');
+    (STATUS[pf.type] || []).forEach((v) => add(v));
+    add('__other', 'Khác (tự nhập)…');
+    if (!cur) sel.value = '';
+    else if ((STATUS[pf.type] || []).includes(cur)) sel.value = cur;
+    else { sel.value = '__other'; f$('main').value = cur; }
+    f$('main').hidden = sel.value !== '__other';
+  }
+  f$('mainSel').addEventListener('change', () => {
+    const other = f$('mainSel').value === '__other';
+    f$('main').hidden = !other;
+    if (other) f$('main').focus(); else f$('main').value = '';
+  });
+  // đất nền không có tầng/phòng: ẩn bớt cho gọn
+  function syncTypeFields() {
+    const noRooms = pf.type === 'dat';
+    ['floors', 'beds', 'wcs'].forEach((k) => { f$(k).closest('label').hidden = noRooms; if (noRooms) f$(k).value = ''; });
+  }
+
   function readForm() {
     const d = { mode: pf.mode, type: pf.type, roadKind: pf.roadKind, tone: pf.tone, channel: pf.channel };
     PF_FIELDS.forEach((k) => { d[k] = f$(k).value; });
+    if (f$('mainSel').value !== '__other') d.main = f$('mainSel').value;
     const on = pf.sug.filter((x) => x.cb.checked);
     d.nearby = on.filter((x) => x.kind === 'nearby').map((x) => x.text);
     const pl = on.find((x) => x.kind === 'planning'); if (pl) d.planning = pl.text;
@@ -836,8 +870,14 @@
   }
   function writeForm(d) {
     Object.keys(PF_DEFAULT).forEach((k) => { pf[k] = d[k] != null && d[k] !== undefined ? d[k] : PF_DEFAULT[k]; });
-    PF_FIELDS.forEach((k) => { f$(k).value = d[k] || ''; });
-    if (['useArea', 'floors', 'front', 'depth', 'beds', 'wcs', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'].some((k) => d[k])) $('#pf-more').open = true;
+    PF_FIELDS.forEach((k) => {
+      const e = f$(k), v = d[k] || '';
+      if (e.tagName === 'SELECT' && v && ![...e.options].some((o) => o.value === v)) { const o = el('option', null, v); o.value = v; e.append(o); }
+      e.value = v;
+    });
+    fillStatus(d.main || '');
+    syncTypeFields();
+    if (['useArea', 'front', 'depth', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'].some((k) => d[k])) $('#pf-more').open = true;
     syncRadios();
   }
   const hasData = () => PF_FIELDS.some((k) => f$(k).value.trim());
@@ -931,7 +971,8 @@
     }
   }
   $$('#tabs button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.tab === 'post' && current) setSuggestions(findSaved()); }));
-  (function restoreDraft() { const d = store.get('qh_post_draft', null); if (d) writeForm(d); else syncRadios(); })();
+  (function restoreDraft() { const d = store.get('qh_post_draft', null); writeForm(d || {}); })();
+  $('#pf-back').addEventListener('click', () => { showTab('place'); setSheet(current ? 'half' : 'peek'); });
 
   // ---------- trang của khách (?s=...) ----------
   function guestMode(o) {

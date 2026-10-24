@@ -213,6 +213,35 @@ select.inp{appearance:auto}
 textarea.body{min-height:280px;font-size:15px;line-height:1.55}
 .warn{background:color-mix(in srgb,var(--t2) 14%,transparent);border-radius:10px;padding:9px 12px;font-size:13.5px;display:grid;gap:4px}
 
+/* ---- tạo tin: to, dễ bấm trên điện thoại ---- */
+#pf label{display:block;font-size:14px}
+#pf label>.inp,#pf label>select{margin-top:6px}
+#pf .inp{font-size:17px;padding:12px 14px;border-radius:12px;min-height:50px}
+#pf textarea.inp{min-height:84px}
+#pf .chips{gap:8px}
+#pf .chip{font-size:15px;padding:9px 15px;min-height:42px}
+#pf .seg button{font-size:15px;padding:11px 6px;min-height:46px}
+#pf .lbl-t{font-size:14px}
+#pf .fs legend{font-size:13px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid3 label[hidden]{display:none}
+.pf-back{display:none;margin-left:-8px}
+.pf-head{justify-content:flex-start}
+.pf-head h3{flex:1;font-size:19px}
+.btn.big{font-size:17px;padding:15px 16px;min-height:54px}
+.pf-actions .btn{min-height:54px;font-size:15px}
+.out .inp{font-size:17px}
+.out .row .btn{flex:1;min-height:48px}
+@media (max-width:899px){
+  body.composing .sheet{height:100%!important;max-height:none;border-radius:0;transition:none}
+  body.composing .grab,body.composing .topbar,body.composing .fab-col,body.composing .brand{display:none}
+  body.composing .sh-head{padding-top:calc(var(--top) + 4px)}
+  body.composing .tabs{margin-top:0}
+  body.composing .pf-back{display:grid}
+  .road-row{grid-template-columns:1fr}
+}
+@media (min-width:900px){ body.composing{--panel:480px} }
+
 /* ---- dữ liệu Sở Xây dựng ---- */
 .ofsum{font-weight:700;font-size:15px;color:var(--fg);background:var(--brand-soft);border-radius:8px;padding:6px 10px;margin:0 0 8px}
 .ofl{font-size:12px;font-weight:600;color:var(--muted);margin:6px 0 2px}

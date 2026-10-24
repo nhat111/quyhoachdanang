@@ -124,7 +124,8 @@
 
   function title(d, v) {
     const verb = d.mode === 'thue' ? 'Cho thuê' : 'Bán';
-    const what = d.main ? lower1(d.main) : TYPES[d.type].noun;
+    const floorsTxt = d.floors && d.type === 'nha' ? `nhà ${d.floors} tầng` : '';
+    const what = d.main ? lower1(d.main) + (floorsTxt && !/tầng/i.test(d.main) ? ` ${d.floors} tầng` : '') : (floorsTxt || TYPES[d.type].noun);
     const rp = roadPhrase(d);
     const hi = d.highlights[0];
     const opts = [
@@ -193,7 +194,7 @@
   }
 
   const SAMPLE = {
-    mode: 'ban', type: 'nha', area: 'Sơn Trà, Đà Nẵng', road: '5m5', main: 'Nhà 3 tầng', landArea: '75', beds: '3', wcs: '3',
+    mode: 'ban', type: 'nha', area: 'Sơn Trà, Đà Nẵng', road: '5m5', main: '', floors: '3', landArea: '75', beds: '3', wcs: '3',
     amenities: 'Gần chợ, trường học', price: '4,8 tỷ', phone: '0900000000', tone: 'friendly', channel: 'fb',
   };
 
