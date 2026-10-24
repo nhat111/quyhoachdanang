@@ -1,1 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#0d5c63"/><path d="M256 96c-66 0-118 50-118 114 0 84 118 206 118 206s118-122 118-206c0-64-52-114-118-114z" fill="#fff"/><circle cx="256" cy="208" r="46" fill="#0d5c63"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs><clipPath id="c"><rect width="1024" height="1024" rx="225"/></clipPath></defs>
+  <g clip-path="url(#c)">
+    <rect width="1024" height="1024" fill="#e8ddc4"/>
+    <g transform="translate(102.4 102.4)">
+      <rect x="17" y="17" width="343" height="294" rx="28" fill="#f2993a"/>
+      <rect x="394" y="17" width="408" height="163" rx="28" fill="#4caf50"/>
+      <rect x="394" y="214" width="179" height="241" rx="28" fill="#e24a4a"/>
+      <rect x="607" y="214" width="195" height="241" rx="28" fill="#f2993a"/>
+      <rect x="17" y="345" width="162" height="457" rx="28" fill="#7e57c2"/>
+      <rect x="213" y="345" width="147" height="228" rx="28" fill="#f2993a"/>
+      <rect x="394" y="489" width="408" height="313" rx="28" fill="#f2993a"/>
+      <rect x="213" y="607" width="147" height="195" rx="28" fill="#4caf50"/>
+    </g>
+    <line x1="41" y1="921" x2="983" y2="41" stroke="#e8ddc4" stroke-width="70"/>
+    <g transform="translate(614 409)">
+      <path d="M0-145a145 145 0 0 1 120 226L0 254-120 81A145 145 0 0 1 0-145z" fill="#fff"/>
+      <path d="M0-120a120 120 0 0 1 99 187L0 234-99 67A120 120 0 0 1 0-120z" fill="#e0245e"/>
+      <circle r="50" fill="#fff"/>
+    </g>
+  </g>
+</svg>

@@ -78,8 +78,7 @@ body.measuring .leaflet-container{cursor:crosshair}
 .grab span{width:40px;height:5px;border-radius:3px;background:var(--line)}
 .sh-head{flex:none;padding:0 16px;touch-action:none}
 .brand{display:flex;gap:10px;align-items:center}
-.brand .logo{width:30px;height:30px;border-radius:9px;background:var(--brand);flex:none;-webkit-mask:none;position:relative}
-.brand .logo::after{content:"";position:absolute;left:9px;top:6px;width:12px;height:12px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid var(--brand-ink)}
+.brand .logo{width:30px;height:30px;border-radius:8px;flex:none;display:block}
 .brand b{display:block;font-size:15px;line-height:1.2}
 .brand small{color:var(--muted);font-size:12px}
 .tabs{display:flex;gap:2px;margin-top:10px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
