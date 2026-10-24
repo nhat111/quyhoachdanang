@@ -183,6 +183,36 @@ body.guest .fab-col{top:calc(var(--top) + 10px)}
 
 .toast{position:fixed;z-index:2000;left:50%;top:calc(var(--top) + 70px);transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:14px;box-shadow:var(--shadow);max-width:calc(100vw - 32px);text-align:center}
 
+/* ---- tạo tin rao ---- */
+#pf{display:grid;gap:12px}
+.pf-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pf-head h3{margin:0;font-size:17px}
+.fs{border:1px solid var(--line);border-radius:12px;padding:12px;margin:0;display:grid;gap:10px;min-width:0}
+.fs legend{font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+#pf label{font-size:13px;color:var(--muted);display:grid;gap:4px;min-width:0}
+.lbl-t{font-size:13px;color:var(--muted);margin-bottom:4px}
+.req{color:var(--t1);font-weight:700}
+.opt{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:12px}
+.err{color:var(--t1);font-size:12.5px;margin-top:-6px}
+.inp.bad{border-color:var(--t1);background:color-mix(in srgb,var(--t1) 6%,var(--surface))}
+select.inp{appearance:auto}
+.more summary{cursor:pointer;font-weight:600;font-size:14px;list-style:revert}
+.more[open] summary{margin-bottom:6px}
+.seg2{grid-template-columns:repeat(2,1fr)!important;margin-bottom:0}
+.seg3{grid-template-columns:repeat(3,1fr)!important;margin-bottom:0}
+.suggest-box{background:var(--brand-soft);border-color:transparent}
+.suggest-box .chk{font-size:13.5px;align-items:flex-start;color:var(--fg)}
+.suggest-box .chk input{margin-top:2px}
+.pf-actions{position:sticky;bottom:0;background:var(--bg);padding:8px 0 4px;z-index:2}
+.btn.big{flex:1;padding:13px 16px;font-size:15px}
+.btn:disabled{opacity:.55;cursor:wait}
+.out{margin-top:14px}
+.out-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.out-h h3{margin:0}
+.out label{font-size:13px;color:var(--muted);display:grid;gap:4px}
+textarea.body{min-height:280px;font-size:15px;line-height:1.55}
+.warn{background:color-mix(in srgb,var(--t2) 14%,transparent);border-radius:10px;padding:9px 12px;font-size:13.5px;display:grid;gap:4px}
+
 /* ---- dữ liệu Sở Xây dựng ---- */
 .ofsum{font-weight:700;font-size:15px;color:var(--fg);background:var(--brand-soft);border-radius:8px;padding:6px 10px;margin:0 0 8px}
 .ofl{font-size:12px;font-weight:600;color:var(--muted);margin:6px 0 2px}

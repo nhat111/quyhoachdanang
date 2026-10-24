@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241301">
+<link rel="stylesheet" href="app.css?v=202610241318">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -66,6 +66,7 @@
     <div class="brand"><span class="logo" aria-hidden="true"></span><div><b>Quy hoạch Đà Nẵng 2050</b><small>QĐ 2016/QĐ-TTg · ranh giới minh hoạ</small></div></div>
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-tab="place" aria-selected="true">Vị trí</button>
+      <button role="tab" data-tab="post" aria-selected="false">Tạo tin</button>
       <button role="tab" data-tab="saved" aria-selected="false">Đã lưu <span class="badge" id="saved-count" hidden></span></button>
       <button role="tab" data-tab="zones" aria-selected="false">Vùng</button>
       <button role="tab" data-tab="facts" aria-selected="false">Tóm tắt</button>
@@ -93,7 +94,7 @@
         <div class="actions">
           <button class="act" id="a-save"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span>Lưu lô</span></button>
           <button class="act" id="a-share"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg><span>Gửi khách</span></button>
-          <button class="act" id="a-post"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span>Copy tin</span></button>
+          <button class="act" id="a-post"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg><span>Tạo tin</span></button>
           <a class="act" id="a-dir" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M12 2l9 9-9 9-9-9z"/><path d="M9 14v-3h5V9l3 3-3 3v-2h-3v1z"/></svg><span>Chỉ đường</span></a>
         </div>
         <div id="p-official"></div>
@@ -122,6 +123,107 @@
           <input class="inp mono" id="share-url" readonly>
           <div class="row"><button class="btn" type="button" id="share-copy">Copy link</button><a class="btn ghost" id="share-open" target="_blank" rel="noopener">Xem thử</a></div>
           <p class="hint">Gửi qua Zalo: khách thấy tiêu đề, giá và nút gọi cho bạn. Thông tin nằm trong link, không lưu trên máy chủ.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tạo tin rao -->
+    <div class="pane" id="pane-post" hidden>
+      <form id="pf" novalidate>
+        <div class="pf-head">
+          <h3>Tạo tin rao</h3>
+          <button type="button" class="btn ghost sm" id="pf-sample" title="Điền dữ liệu minh họa để thử">Điền dữ liệu mẫu</button>
+        </div>
+        <p class="hint" id="pf-sample-note" hidden>Đang dùng dữ liệu minh họa, số điện thoại không có thật.</p>
+
+        <div class="seg seg2" id="pf-mode" role="radiogroup" aria-label="Hình thức">
+          <button type="button" data-v="ban" aria-pressed="true">Bán</button>
+          <button type="button" data-v="thue" aria-pressed="false">Cho thuê</button>
+        </div>
+
+        <fieldset class="fs">
+          <legend>Thông tin bắt buộc</legend>
+          <div class="lbl-t">Loại bất động sản <b class="req">*</b></div>
+          <div class="chips" id="pf-type" role="radiogroup" aria-label="Loại bất động sản"></div>
+          <label for="pf-area">Địa chỉ hoặc khu vực <b class="req">*</b><input class="inp" id="pf-area" maxlength="120" placeholder="Kiệt 120 Nguyễn Văn Thoại, Sơn Trà, Đà Nẵng"></label>
+          <div class="err" id="pf-area-err" hidden></div>
+          <label for="pf-phone">Số điện thoại <b class="req">*</b><input class="inp" id="pf-phone" maxlength="20" inputmode="tel" placeholder="0905 123 456"></label>
+          <div class="err" id="pf-phone-err" hidden></div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>Thông tin chính <span class="opt">không bắt buộc</span></legend>
+          <label for="pf-main">Hiện trạng<input class="inp" id="pf-main" maxlength="60" placeholder="Nhà 3 tầng, nhà cấp 4, đất trống"></label>
+          <div class="grid2">
+            <label for="pf-road">Đường trước nhà<input class="inp" id="pf-road" maxlength="20" placeholder="5m5, 7m5, 10m"></label>
+            <div><div class="lbl-t">Loại đường</div>
+              <div class="seg seg3" id="pf-roadkind" role="radiogroup" aria-label="Loại đường">
+                <button type="button" data-v="" aria-pressed="true">Không ghi</button>
+                <button type="button" data-v="mattien" aria-pressed="false">Mặt tiền</button>
+                <button type="button" data-v="kiet" aria-pressed="false">Kiệt</button>
+              </div></div>
+          </div>
+          <div class="grid2">
+            <label for="pf-price">Giá<input class="inp" id="pf-price" maxlength="40" placeholder="4,8 tỷ · 6 triệu/tháng"></label>
+            <label for="pf-landArea">Diện tích đất (m²)<input class="inp" id="pf-landArea" maxlength="20" inputmode="decimal" placeholder="75"></label>
+          </div>
+        </fieldset>
+
+        <details class="fs more" id="pf-more">
+          <summary>Thêm chi tiết <span class="opt">diện tích sử dụng, phòng, pháp lý, tiện ích…</span></summary>
+          <div class="grid2">
+            <label for="pf-useArea">Diện tích sử dụng (m²)<input class="inp" id="pf-useArea" maxlength="20" inputmode="decimal" placeholder="200"></label>
+            <label for="pf-floors">Số tầng<input class="inp" id="pf-floors" maxlength="10" placeholder="3"></label>
+          </div>
+          <div class="grid2">
+            <label for="pf-front">Mặt tiền (m)<input class="inp" id="pf-front" maxlength="10" inputmode="decimal" placeholder="5"></label>
+            <label for="pf-depth">Chiều sâu (m)<input class="inp" id="pf-depth" maxlength="10" inputmode="decimal" placeholder="15"></label>
+          </div>
+          <div class="grid2">
+            <label for="pf-beds">Phòng ngủ<input class="inp" id="pf-beds" maxlength="5" inputmode="numeric" placeholder="3"></label>
+            <label for="pf-wcs">WC<input class="inp" id="pf-wcs" maxlength="5" inputmode="numeric" placeholder="3"></label>
+          </div>
+          <div class="grid2">
+            <label for="pf-direction">Hướng<select class="inp" id="pf-direction"><option value="">Không ghi</option><option>Đông</option><option>Tây</option><option>Nam</option><option>Bắc</option><option>Đông Nam</option><option>Đông Bắc</option><option>Tây Nam</option><option>Tây Bắc</option></select></label>
+            <label for="pf-legal">Pháp lý<select class="inp" id="pf-legal"><option value="">Chưa cung cấp</option><option>Sổ đỏ</option><option>Sổ hồng</option><option>Hợp đồng</option><option>Khác</option></select></label>
+          </div>
+          <label for="pf-furniture">Nội thất<select class="inp" id="pf-furniture"><option value="">Không ghi</option><option>Đầy đủ</option><option>Cơ bản</option><option>Nhà trống</option><option>Khác</option></select></label>
+          <label for="pf-amenities">Tiện ích gần đó<textarea class="inp" id="pf-amenities" maxlength="300" rows="2" placeholder="Gần chợ, trường học, cách biển (tự nhập, cách nhau bằng dấu phẩy)"></textarea></label>
+          <label for="pf-highlights">Điểm nổi bật<textarea class="inp" id="pf-highlights" maxlength="300" rows="2" placeholder="Nhà mới, khu dân cư yên tĩnh (chỉ ghi điều bạn chắc chắn)"></textarea></label>
+          <label for="pf-note">Ghi chú khác<textarea class="inp" id="pf-note" maxlength="300" rows="2"></textarea></label>
+          <label for="pf-name">Tên người liên hệ<input class="inp" id="pf-name" maxlength="50" placeholder="Anh Nam"></label>
+        </details>
+
+        <div class="fs suggest-box" id="pf-sug" hidden>
+          <div class="lbl-t">Gợi ý từ bản đồ <span class="opt">tick để đưa vào tin</span></div>
+          <div id="pf-sug-list"></div>
+          <p class="hint">Khoảng cách là đường chim bay, dữ liệu từ OpenStreetMap và cổng quy hoạch của Sở. Hãy kiểm tra trước khi đăng.</p>
+        </div>
+
+        <div class="lbl-t">Phong cách</div>
+        <div class="chips" id="pf-tone" role="radiogroup" aria-label="Phong cách"></div>
+        <div class="lbl-t">Đăng lên</div>
+        <div class="seg seg3" id="pf-channel" role="radiogroup" aria-label="Kênh đăng">
+          <button type="button" data-v="fb" aria-pressed="true">Facebook</button>
+          <button type="button" data-v="zalo" aria-pressed="false">Zalo</button>
+          <button type="button" data-v="both" aria-pressed="false">Cả hai</button>
+        </div>
+
+        <div class="row pf-actions">
+          <button type="submit" class="btn big" id="pf-go">Tạo tin rao</button>
+          <button type="button" class="btn ghost" id="pf-reset">Làm mới biểu mẫu</button>
+        </div>
+      </form>
+
+      <div class="card out" id="pf-out" hidden>
+        <div class="out-h"><h3>Tin rao</h3><span class="hint">Sửa trực tiếp được trước khi sao chép</span></div>
+        <div class="warn" id="pf-warn" hidden></div>
+        <label for="pf-title">Tiêu đề<input class="inp" id="pf-title"></label>
+        <label for="pf-body">Nội dung<textarea class="inp body" id="pf-body" rows="14"></textarea></label>
+        <div class="row">
+          <button type="button" class="btn" id="pf-copy">Sao chép tin</button>
+          <button type="button" class="btn ghost" id="pf-copy-title">Sao chép tiêu đề</button>
+          <button type="button" class="btn ghost" id="pf-again">Tạo phiên bản khác</button>
         </div>
       </div>
     </div>
@@ -198,8 +300,9 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241301"></script>
-<script src="data.js?v=202610241301"></script>
-<script src="app.js?v=202610241301"></script>
+<script src="config.js?v=202610241318"></script>
+<script src="listing.js?v=202610241318"></script>
+<script src="data.js?v=202610241318"></script>
+<script src="app.js?v=202610241318"></script>
 </body>
 </html>

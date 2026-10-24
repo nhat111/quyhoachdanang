@@ -8,10 +8,15 @@ Công cụ tra vị trí lô đất theo Quy hoạch chung TP Đà Nẵng đến
 - **Lớp quy hoạch chính thức:** phủ lớp ArcGIS của Sở Xây dựng và tra thông tin tại điểm khi điền URL trong `config.js`.
 - **Môi giới:** lưu lô (trên máy), copy nội dung tin đăng, link gửi khách có ảnh xem trước khi gửi Zalo, trang của khách có nút Gọi / Zalo / Chỉ đường.
 - **Tiện ích xung quanh:** trường học, chợ/siêu thị, y tế, công viên, ngân hàng, hành chính trong bán kính 500 m / 1 km / 2 km (OpenStreetMap qua Overpass API), vẽ lên bản đồ, có trong trang của khách và tin đăng.
+- **Tạo tin rao:** form 3 trường bắt buộc (loại, khu vực, SĐT) + chi tiết tuỳ chọn, 4 phong cách, mẫu riêng cho Facebook/Zalo, tạo phiên bản khác, sửa trực tiếp rồi sao chép. Gợi ý từ bản đồ (loại đất quy hoạch, tiện ích kèm khoảng cách, link xem vị trí) chỉ vào tin khi người dùng tick. Không bịa thông tin: trường trống bị bỏ, giữ nguyên cách viết "5m5" và SĐT, cảnh báo khi tin có con số không có trong dữ liệu nhập hoặc dữ liệu mâu thuẫn. Nháp lưu trên máy.
 - **Đo:** khoảng cách và diện tích trên bản đồ.
+
+## Chạy thử
+Site tĩnh, không cần build: mở `index.html` qua một static server (`npx serve .`) hoặc deploy Vercel (thư mục `api/` là serverless function).
 
 ## Cấu trúc
 - `index.html`, `app.css`, `app.js` — ứng dụng (Leaflet 1.9.4, esri-leaflet 3.0.12, Turf 6.5.0, proj4 2.9.2 qua CDN)
+- `listing.js` — bộ tạo tin rao (hàm thuần, chạy được trong Node để test: `node -e "console.log(require('./listing.js').generate(require('./listing.js').SAMPLE).text)"`)
 - `data.js` — 14 vùng (vẽ minh hoạ), khu lấn biển, hạ tầng, mốc khoảng cách
 - `config.js` — URL dịch vụ GIS chính thức, trường bị ẩn
 - `api/s.js` + `vercel.json` — `/l?d=...` trả thẻ Open Graph rồi chuyển sang `/?s=...`

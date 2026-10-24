@@ -194,7 +194,7 @@
   // ---------- tab ----------
   function showTab(name) {
     $$('#tabs button').forEach((b) => b.setAttribute('aria-selected', b.dataset.tab === name));
-    ['place', 'saved', 'zones', 'facts'].forEach((t) => { $('#pane-' + t).hidden = t !== name; });
+    ['place', 'post', 'saved', 'zones', 'facts'].forEach((t) => { $('#pane-' + t).hidden = t !== name; });
     $('#sh-body').scrollTop = 0;
     if (sheet.dataset.state === 'peek') setSheet('half');
   }
@@ -574,12 +574,7 @@
       url && `Xem vị trí và quy hoạch: ${url}`,
     ].filter(Boolean).join('\n');
   }
-  $('#a-post').addEventListener('click', () => {
-    if (!current) return;
-    const s = findSaved();
-    const o = s || { v: 1, la: +current.lat.toFixed(6), lo: +current.lng.toFixed(6), a: cut(current.addr, 120), b: broker.name, ph: broker.phone };
-    copyText(postText(o, current.a, shareUrl(o), current.nearby, current.official), 'Đã copy nội dung tin đăng');
-  });
+  $('#a-post').addEventListener('click', () => { if (current) openPost(findSaved()); });
 
   // ---------- lô đã lưu ----------
   let lots = store.get('qh_lots', []);
@@ -607,8 +602,8 @@
       bOpen.addEventListener('click', () => lookup(o.la, o.lo, { addr: o.a, zoom: 17 }));
       const bShare = el('button', 'btn ghost sm', 'Copy link'); bShare.type = 'button';
       bShare.addEventListener('click', () => copyText(shareUrl(o), 'Đã copy link gửi khách'));
-      const bPost = el('button', 'btn ghost sm', 'Copy tin'); bPost.type = 'button';
-      bPost.addEventListener('click', () => copyText(postText(o, a, shareUrl(o)), 'Đã copy nội dung tin đăng'));
+      const bPost = el('button', 'btn ghost sm', 'Tạo tin'); bPost.type = 'button';
+      bPost.addEventListener('click', async () => { await lookup(o.la, o.lo, { addr: o.a, zoom: 17 }); openPost(o); });
       const bDel = el('button', 'btn danger sm', 'Xoá'); bDel.type = 'button';
       bDel.addEventListener('click', () => { if (bDel.dataset.confirm) { removeLot(o.id); markSaved(); } else { bDel.dataset.confirm = '1'; bDel.textContent = 'Bấm lần nữa để xoá'; setTimeout(() => { delete bDel.dataset.confirm; bDel.textContent = 'Xoá'; }, 3000); } });
       row.append(bOpen, bShare, bPost, bDel); c.append(row);
@@ -804,10 +799,144 @@
     return parts.length ? `Gần: ${parts.join(' · ')}` : '';
   }
 
+
+  // ---------- tạo tin rao (listing.js) ----------
+  const LG = window.QHListing;
+  const PF_FIELDS = ['area', 'phone', 'main', 'road', 'price', 'landArea', 'useArea', 'floors', 'front', 'depth', 'beds', 'wcs', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'];
+  const PF_DEFAULT = { mode: 'ban', type: 'nha', roadKind: '', tone: 'friendly', channel: 'fb' };
+  const pf = Object.assign({ variant: 0, sug: [] }, PF_DEFAULT);
+  const f$ = (k) => $('#pf-' + k);
+
+  function syncRadios() {
+    $$('#pf-type .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === pf.type));
+    $$('#pf-tone .chip').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === pf.tone));
+    [['#pf-mode', 'mode'], ['#pf-roadkind', 'roadKind'], ['#pf-channel', 'channel']].forEach(([sel, key]) =>
+      $$(sel + ' button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === pf[key])));
+  }
+  function radioChips(box, items, key) {
+    Object.entries(items).forEach(([k, v]) => {
+      const b = el('button', 'chip', typeof v === 'string' ? v : v.label); b.type = 'button'; b.dataset.v = k;
+      b.addEventListener('click', () => { pf[key] = k; syncRadios(); saveDraft(); });
+      box.append(b);
+    });
+  }
+  radioChips($('#pf-type'), LG.TYPES, 'type');
+  radioChips($('#pf-tone'), LG.TONES, 'tone');
+  [['#pf-mode', 'mode'], ['#pf-roadkind', 'roadKind'], ['#pf-channel', 'channel']].forEach(([sel, key]) =>
+    $$(sel + ' button').forEach((b) => b.addEventListener('click', () => { pf[key] = b.dataset.v; syncRadios(); saveDraft(); })));
+
+  function readForm() {
+    const d = { mode: pf.mode, type: pf.type, roadKind: pf.roadKind, tone: pf.tone, channel: pf.channel };
+    PF_FIELDS.forEach((k) => { d[k] = f$(k).value; });
+    const on = pf.sug.filter((x) => x.cb.checked);
+    d.nearby = on.filter((x) => x.kind === 'nearby').map((x) => x.text);
+    const pl = on.find((x) => x.kind === 'planning'); if (pl) d.planning = pl.text;
+    const lk = on.find((x) => x.kind === 'link'); if (lk) d.link = lk.text;
+    return d;
+  }
+  function writeForm(d) {
+    Object.keys(PF_DEFAULT).forEach((k) => { pf[k] = d[k] != null && d[k] !== undefined ? d[k] : PF_DEFAULT[k]; });
+    PF_FIELDS.forEach((k) => { f$(k).value = d[k] || ''; });
+    if (['useArea', 'floors', 'front', 'depth', 'beds', 'wcs', 'direction', 'legal', 'furniture', 'amenities', 'highlights', 'note', 'name'].some((k) => d[k])) $('#pf-more').open = true;
+    syncRadios();
+  }
+  const hasData = () => PF_FIELDS.some((k) => f$(k).value.trim());
+  let draftT;
+  function saveDraft() {
+    clearTimeout(draftT);
+    draftT = setTimeout(() => { const d = readForm(); delete d.nearby; delete d.planning; delete d.link; store.set('qh_post_draft', d); }, 300);
+  }
+  $('#pf').addEventListener('input', saveDraft);
+  $('#pf').addEventListener('change', saveDraft);
+
+  function showErr(k, msg) { const e = $(`#pf-${k}-err`); if (!e) return; e.textContent = msg || ''; e.hidden = !msg; f$(k).classList.toggle('bad', !!msg); f$(k).setAttribute('aria-invalid', !!msg); }
+  ['area', 'phone'].forEach((k) => f$(k).addEventListener('input', () => showErr(k, '')));
+
+  function renderOut(r) {
+    $('#pf-out').hidden = false;
+    $('#pf-title').value = r.title;
+    $('#pf-body').value = r.body;
+    const w = r.warnings.slice();
+    if (r.unknownNumbers.length) w.push(`Tin có con số không nằm trong dữ liệu đã nhập (${r.unknownNumbers.join(', ')}). Hãy kiểm tra lại.`);
+    const box = $('#pf-warn'); box.replaceChildren(); box.hidden = !w.length;
+    w.forEach((t) => box.append(el('div', null, t)));
+    setTimeout(() => $('#pf-out').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+  $('#pf').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const d = readForm();
+    const errs = LG.validate(d);
+    showErr('area', errs.area); showErr('phone', errs.phone);
+    if (errs.area || errs.phone) { (errs.area ? f$('area') : f$('phone')).focus(); toast('Còn thiếu thông tin bắt buộc'); return; }
+    const btn = $('#pf-go'); btn.disabled = true; btn.textContent = 'Đang tạo…';
+    setTimeout(() => {
+      pf.variant = 0; renderOut(LG.generate(d, 0));
+      btn.disabled = false; btn.textContent = 'Tạo tin rao';
+      if (d.name) broker.name = broker.name || d.name;
+    }, 120);
+  });
+  $('#pf-again').addEventListener('click', () => {
+    const d = readForm(); if (Object.keys(LG.validate(d)).length) return $('#pf').requestSubmit();
+    pf.variant++; renderOut(LG.generate(d, pf.variant)); toast(`Phiên bản ${pf.variant + 1}`);
+  });
+  $('#pf-copy').addEventListener('click', () => copyText(`${$('#pf-title').value.trim()}\n\n${$('#pf-body').value.trim()}`, 'Đã sao chép tin rao!'));
+  $('#pf-copy-title').addEventListener('click', () => copyText($('#pf-title').value.trim(), 'Đã sao chép tiêu đề'));
+  $('#pf-sample').addEventListener('click', () => { writeForm(LG.SAMPLE); $('#pf-sample-note').hidden = false; ['area', 'phone'].forEach((k) => showErr(k, '')); saveDraft(); toast('Đã điền dữ liệu minh họa'); });
+  $('#pf-reset').addEventListener('click', () => {
+    const b = $('#pf-reset');
+    if (hasData() && !b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Bấm lần nữa để xoá hết'; setTimeout(() => { delete b.dataset.confirm; b.textContent = 'Làm mới biểu mẫu'; }, 3500); return; }
+    delete b.dataset.confirm; b.textContent = 'Làm mới biểu mẫu';
+    writeForm({}); pf.sug.forEach((x) => { x.cb.checked = false; });
+    $('#pf-out').hidden = true; $('#pf-sample-note').hidden = true; $('#pf-more').open = false;
+    ['area', 'phone'].forEach((k) => showErr(k, ''));
+    try { localStorage.removeItem('qh_post_draft'); } catch (_) {}
+    toast('Đã làm mới biểu mẫu');
+  });
+
+  // gợi ý từ lô đang chọn: chỉ đưa vào tin khi người dùng tick
+  const approx = (km) => (km < 1 ? `khoảng ${Math.max(50, Math.round(km * 1000 / 50) * 50)} m` : `khoảng ${km.toFixed(1).replace('.', ',')} km`);
+  function setSuggestions(lot) {
+    const list = $('#pf-sug-list'); list.replaceChildren(); pf.sug = [];
+    if (!current) { $('#pf-sug').hidden = true; return; }
+    const items = [];
+    const qh = officialSummary(current.official);
+    if (qh) items.push({ kind: 'planning', text: `${qh} (theo cổng thông tin quy hoạch xây dựng Đà Nẵng)`, label: `Quy hoạch: ${qh}` });
+    const near = (current.nearby || []).filter((x) => x.named);
+    const picked = [];
+    ['school', 'market', 'health', 'park'].forEach((c) => near.filter((x) => x.cat === c).slice(0, 2).forEach((x) => picked.push(x)));
+    picked.sort((a, b) => a.km - b.km).slice(0, 6).forEach((x) => { const t = `${x.name} (${approx(x.km)})`; items.push({ kind: 'nearby', text: t, label: t }); });
+    const o = lot || { v: 1, la: +current.lat.toFixed(6), lo: +current.lng.toFixed(6), a: cut(current.addr, 120), b: broker.name, ph: broker.phone };
+    items.push({ kind: 'link', text: shareUrl(o), label: 'Link xem vị trí và quy hoạch trên bản đồ' });
+    items.forEach((it) => {
+      const row = el('label', 'chk');
+      const cb = el('input'); cb.type = 'checkbox';
+      row.append(cb, document.createTextNode(' ' + it.label));
+      list.append(row); pf.sug.push(Object.assign(it, { cb }));
+    });
+    $('#pf-sug').hidden = !items.length;
+  }
+  function openPost(lot) {
+    showTab('post'); setSheet('full');
+    if (current) {
+      if (!f$('area').value.trim() && (current.addr || (lot && lot.a))) f$('area').value = (lot && lot.a) || current.addr;
+      if (lot) {
+        if (!f$('price').value.trim() && lot.p) f$('price').value = lot.p;
+        if (!f$('landArea').value.trim() && lot.s) f$('landArea').value = lot.s;
+        if (!f$('note').value.trim() && lot.n) { f$('note').value = lot.n; $('#pf-more').open = true; }
+      }
+      if (!f$('name').value.trim() && ((lot && lot.b) || broker.name)) f$('name').value = (lot && lot.b) || broker.name;
+      if (!f$('phone').value.trim() && ((lot && lot.ph) || broker.phone)) f$('phone').value = (lot && lot.ph) || broker.phone;
+      setSuggestions(lot);
+      saveDraft();
+    }
+  }
+  $$('#tabs button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.tab === 'post' && current) setSuggestions(findSaved()); }));
+  (function restoreDraft() { const d = store.get('qh_post_draft', null); if (d) writeForm(d); else syncRadios(); })();
+
   // ---------- trang của khách (?s=...) ----------
   function guestMode(o) {
     document.body.classList.add('guest');
-    ['place', 'saved', 'zones', 'facts'].forEach((t) => { $('#pane-' + t).hidden = true; });
+    ['place', 'post', 'saved', 'zones', 'facts'].forEach((t) => { $('#pane-' + t).hidden = true; });
     $('#pane-guest').hidden = false;
     $('#g-title').textContent = cut(o.t, 80) || 'Vị trí lô đất';
     $('#g-price').textContent = cut(o.p, 40); $('#g-area').textContent = cut(o.s, 20);
