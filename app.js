@@ -59,7 +59,7 @@
   }
   L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
-  const zoneLayer = L.layerGroup().addTo(map), reclaimLayer = L.layerGroup().addTo(map),
+  const zoneLayer = L.layerGroup(), reclaimLayer = L.layerGroup().addTo(map),
         infraLayer = L.layerGroup().addTo(map), poiLayer = L.layerGroup().addTo(map);
   const polys = {}, pins = {};
   Z.forEach((z) => {
@@ -134,7 +134,15 @@
     b.setAttribute('aria-pressed', b.dataset.base === base);
     b.addEventListener('click', () => setBase(b.dataset.base));
   });
-  const toggles = { 'ov-zones': zoneLayer, 'ov-reclaim': reclaimLayer, 'ov-infra': infraLayer, 'ov-poi': poiLayer };
+  // vùng đánh số: mặc định ẩn (đã có lớp quy hoạch của Sở), bật bằng nút trên bản đồ hoặc bảng lớp
+  function setZones(on) {
+    if (on) zoneLayer.addTo(map); else map.removeLayer(zoneLayer);
+    $('#ov-zones').checked = on; $('#btn-zones').setAttribute('aria-pressed', on); store.set('qh_zones', on);
+  }
+  setZones(store.get('qh_zones', false));
+  $('#btn-zones').addEventListener('click', () => { const on = !map.hasLayer(zoneLayer); setZones(on); toast(on ? 'Đã hiện các vùng đánh số' : 'Đã ẩn các vùng đánh số'); });
+  $('#ov-zones').addEventListener('change', (e) => setZones(e.target.checked));
+  const toggles = { 'ov-reclaim': reclaimLayer, 'ov-infra': infraLayer, 'ov-poi': poiLayer };
   Object.entries(toggles).forEach(([id, layer]) => $('#' + id).addEventListener('change', (e) => { if (e.target.checked) layer.addTo(map); else map.removeLayer(layer); }));
   // hàng bật/tắt cho từng lớp của Sở + chú giải tải khi mở bảng lớp
   officials.forEach((o) => {
@@ -616,6 +624,7 @@
 
   // ---------- danh sách vùng ----------
   function showZoneOnMap(id) {
+    if (!map.hasLayer(zoneLayer)) setZones(true);
     const z = Z.find((x) => x.id === id);
     map.flyToBounds(polys[id].getBounds(), { padding: [40, 40], maxZoom: 13, duration: 0.7 });
     pins[id].bindPopup(`<h4>${z.id}. ${z.name}</h4><div style="color:${TIER[z.t].c};font-weight:600;font-size:12px">${TIER[z.t].n}</div><div>${z.h}</div>`).openPopup();
@@ -921,7 +930,7 @@
     pf.variant++; renderOut(LG.generate(d, pf.variant)); toast(`Phiên bản ${pf.variant + 1}`);
   });
   $('#pf-copy').addEventListener('click', () => copyText(`${$('#pf-title').value.trim()}\n\n${$('#pf-body').value.trim()}`, 'Đã sao chép tin rao!'));
-  $('#pf-copy-title').addEventListener('click', () => copyText($('#pf-title').value.trim(), 'Đã sao chép tiêu đề'));
+  $('#pf-copy-top').addEventListener('click', () => $('#pf-copy').click());
   $('#pf-sample').addEventListener('click', () => { writeForm(LG.SAMPLE); $('#pf-sample-note').hidden = false; ['area', 'phone'].forEach((k) => showErr(k, '')); saveDraft(); toast('Đã điền dữ liệu minh họa'); });
   $('#pf-reset').addEventListener('click', () => {
     const b = $('#pf-reset');

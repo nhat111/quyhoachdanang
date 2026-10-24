@@ -232,6 +232,7 @@ textarea.body{min-height:280px;font-size:15px;line-height:1.55}
 .pf-actions .btn{min-height:54px;font-size:15px}
 .out .inp{font-size:17px}
 .out .row .btn{flex:1;min-height:48px}
+.copyall{width:100%;margin:2px 0 4px}
 @media (max-width:899px){
   body.composing .sheet{height:100%!important;max-height:none;border-radius:0;transition:none}
   body.composing .grab,body.composing .topbar,body.composing .fab-col,body.composing .brand{display:none}

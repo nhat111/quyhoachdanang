@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="app.css?v=202610241326">
+<link rel="stylesheet" href="app.css?v=202610241331">
 </head>
 <body>
 <div id="map" aria-label="Bản đồ quy hoạch"></div>
@@ -31,6 +31,7 @@
 <!-- Nút trên bản đồ -->
 <div class="fab-col" id="fabs">
   <button class="fab" id="btn-layers" aria-label="Lớp bản đồ" title="Lớp bản đồ"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></button>
+  <button class="fab" id="btn-zones" aria-pressed="false" aria-label="Ẩn/hiện các vùng đánh số" title="Vùng đánh số"><svg viewBox="0 0 24 24"><path d="M4 7l6-3 8 3 2 9-7 5-8-4z"/><circle cx="11" cy="12" r="2.2"/></svg></button>
   <button class="fab" id="btn-measure" aria-label="Đo khoảng cách, diện tích" title="Đo"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg></button>
   <button class="fab" id="btn-gps" aria-label="Vị trí của tôi" title="Vị trí của tôi"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
 </div>
@@ -44,7 +45,7 @@
     <button data-base="gray" aria-pressed="false">Xám</button>
   </div>
   <div class="lp-h">Lớp phủ</div>
-  <label class="chk"><input type="checkbox" id="ov-zones" checked> Vùng tiềm năng (minh hoạ)</label>
+  <label class="chk"><input type="checkbox" id="ov-zones"> Vùng đánh số (minh hoạ)</label>
   <label class="chk"><input type="checkbox" id="ov-reclaim" checked> Khu lấn biển</label>
   <label class="chk"><input type="checkbox" id="ov-infra" checked> Hạ tầng giao thông</label>
   <label class="chk"><input type="checkbox" id="ov-poi" checked> Điểm mốc</label>
@@ -224,12 +225,12 @@
 
       <div class="card out" id="pf-out" hidden>
         <div class="out-h"><h3>Tin rao</h3><span class="hint">Sửa trực tiếp được trước khi sao chép</span></div>
+        <button type="button" class="btn big copyall" id="pf-copy-top">Sao chép toàn bộ tin</button>
         <div class="warn" id="pf-warn" hidden></div>
         <label for="pf-title">Tiêu đề<input class="inp" id="pf-title"></label>
         <label for="pf-body">Nội dung<textarea class="inp body" id="pf-body" rows="14"></textarea></label>
         <div class="row">
-          <button type="button" class="btn" id="pf-copy">Sao chép tin</button>
-          <button type="button" class="btn ghost" id="pf-copy-title">Sao chép tiêu đề</button>
+          <button type="button" class="btn" id="pf-copy">Sao chép toàn bộ tin</button>
           <button type="button" class="btn ghost" id="pf-again">Tạo phiên bản khác</button>
         </div>
       </div>
@@ -307,9 +308,9 @@
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.2/proj4.js"></script>
-<script src="config.js?v=202610241326"></script>
-<script src="listing.js?v=202610241326"></script>
-<script src="data.js?v=202610241326"></script>
-<script src="app.js?v=202610241326"></script>
+<script src="config.js?v=202610241331"></script>
+<script src="listing.js?v=202610241331"></script>
+<script src="data.js?v=202610241331"></script>
+<script src="app.js?v=202610241331"></script>
 </body>
 </html>
